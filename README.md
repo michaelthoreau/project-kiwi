@@ -63,6 +63,45 @@ plt.imshow(conn.getTile(tileDict['16/11658/24927']))
 plt.title('16/11658/24927')
 ```
 
+---
+
+### Adding Imagery
+
+```Python
+imageryId = conn.addImagery("../odm_orthophoto.tif", "python upload")
+
+while True:
+    status = conn.getImageryStatus(imageryId)
+    print("status: ", status)
+    if status == "live":
+        break
+    time.sleep(1.0)
+
+# Result
+# status:  awaiting processing
+# status:  processing
+# status:  normalising
+# status:  normalisation complete
+# status:  normalisation complete
+# status:  staging tile: 1/16
+# status:  staging tile: 1/16
+# status:  live upto zoom 16
+# status:  live upto zoom 16
+# status:  live upto zoom 16
+# status:  live upto zoom 16
+# status:  staging tile: 1/1834
+# status:  staging tile: 301/1834
+# status:  staging tile: 601/1834
+# status:  staging tile: 901/1834
+# status:  staging tile: 1201/1834
+# status:  staging tile: 1501/1834
+# status:  staging tile: 1801/1834
+# status:  live
+```
+
 
 ### Notes
 Visit https://project-kiwi.org/manage/ to get an api key (registration required).
+
+See a list of supported formats here (creation column):
+https://gdal.org/drivers/raster/index.html

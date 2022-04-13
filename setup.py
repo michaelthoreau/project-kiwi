@@ -6,7 +6,7 @@ long_description = (this_directory / "README.md").read_text()
 setup(
   name = 'projectkiwi',         # How you named your package folder (MyLib)
   packages = ['projectkiwi'],   # Chose the same as "name"
-  version = '0.2.1',      # Start with a small number and increase it with every change you make
+  version = '0.2.2',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
   description = 'Python tools for project-kiwi.org',   # Give a short description about your library
   long_description=long_description,
@@ -14,7 +14,7 @@ setup(
   author = 'Michael Thoreau',                   # Type in your name
   author_email = 'michael@project-kiwi.org',      # Type in your E-Mail
   url = 'https://github.com/michaelthoreau/projectkiwi',   # Provide either the link to your github or to your website
-  download_url = 'https://github.com/michaelthoreau/projectkiwi/archive/refs/tags/v0.2.1.tar.gz',    # I explain this later on
+  download_url = 'https://github.com/michaelthoreau/projectkiwi/archive/refs/tags/v0.2.2.tar.gz',    # I explain this later on
   keywords = ['GIS', 'ML', 'OTHERBUZZWORDS'],   # Keywords that define your package best
   install_requires=['requests', 'numpy', 'pillow'],
   python_requires='>=3.3',

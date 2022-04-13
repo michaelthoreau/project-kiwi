@@ -96,3 +96,66 @@ class connector():
 
 
 
+    def getImageryStatus(self, imageryId: str):
+        """ Get the status of imagery
+
+        Args:
+            imageryId (str): Imagery id
+
+        Returns:
+            str: status
+        """        
+        route = "get_imagery_status"
+        params = {'key': self.key, 'imagery_id': imageryId}
+
+        r = requests.get(self.url + route, params=params)
+        r.raise_for_status()
+        return r.json()['status']
+
+
+    def setImageryStatus(self, imageryId: str, status: str):
+        """Set the status for imagery e.g. when the upload is complete
+
+        Args:
+            imageryId (str): Imagery id
+            status (str): status e.g. "awaiting processing"
+        """
+        route = "set_imagery_status" 
+        params = {'key': self.key, 'imagery_id': imageryId, 'status': status}
+
+        r = requests.get(self.url + route, params=params)
+        r.raise_for_status()
+
+
+
+    def addImagery(self, filename: str, name: str):
+        """ Add imagery to project-kiwi.org
+
+        Args:
+            filename (str): Path to the file to be uploaded
+            name (str): Name for the imagery
+
+        Returns:
+            int: imagery id
+        """       
+        
+        # get presigned upload url
+        route = "get_imagery_upload_url"
+        params = {'key': self.key, 'filename': filename, 'name': name}
+        r = requests.get(self.url + route, params=params)
+        r.raise_for_status()
+        jsonResponse = r.json()
+        url = jsonResponse['url']
+        
+        # upload
+        r = requests.put(url, data=open(filename, 'rb'), headers={'Content-type': ''})
+        r.raise_for_status()
+
+        # set the status - triggers processing
+        self.setImageryStatus(jsonResponse['imagery_id'], "awaiting processing")
+        return jsonResponse['imagery_id']
+        
+        
+
+
+
