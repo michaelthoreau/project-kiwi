@@ -1,4 +1,4 @@
-# project-kiwi
+# projectkiwi
 
 Tools to interact with project-kiwi.org
 
