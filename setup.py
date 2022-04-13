@@ -14,7 +14,7 @@ setup(
   author = 'Michael Thoreau',                   # Type in your name
   author_email = 'michael@project-kiwi.org',      # Type in your E-Mail
   url = 'https://github.com/michaelthoreau/projectkiwi',   # Provide either the link to your github or to your website
-  download_url = 'https://github.com/michaelthoreau/projectkiwi/archive/refs/tags/v0.1.2.tar.gz',    # I explain this later on
+  download_url = 'https://github.com/michaelthoreau/projectkiwi/archive/refs/tags/v0.2.0.tar.gz',    # I explain this later on
   keywords = ['GIS', 'ML', 'OTHERBUZZWORDS'],   # Keywords that define your package best
   install_requires=['requests', 'numpy', 'PIL'],
   python_requires='>=3.3',
