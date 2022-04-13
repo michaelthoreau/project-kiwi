@@ -2,7 +2,7 @@ import logging
 import requests
 import json
 import numpy as np
-import PIL
+from PIL import Image
 import io
 
 class connector():
@@ -71,7 +71,7 @@ class connector():
         r = requests.get(url)
         r.raise_for_status()
         tileContent = r.content
-        return np.array(PIL.Image.open(io.BytesIO(tileContent)))
+        return np.array(Image.open(io.BytesIO(tileContent)))
 
 
     def getTileDict(self, imageryId: str):
