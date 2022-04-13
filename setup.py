@@ -16,7 +16,7 @@ setup(
   url = 'https://github.com/michaelthoreau/projectkiwi',   # Provide either the link to your github or to your website
   download_url = 'https://github.com/michaelthoreau/projectkiwi/archive/refs/tags/v0.2.0.tar.gz',    # I explain this later on
   keywords = ['GIS', 'ML', 'OTHERBUZZWORDS'],   # Keywords that define your package best
-  install_requires=['requests', 'numpy', 'PIL'],
+  install_requires=['requests', 'numpy', 'pillow'],
   python_requires='>=3.3',
   classifiers=[
         "Programming Language :: Python :: 3",
