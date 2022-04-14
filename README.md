@@ -50,7 +50,9 @@ print("top5: ", tiles[:5])
 
 ### Tiles as numpy arrays
 
-![example](figs/example.png)
+<!-- ![example](figs/example.png) -->
+![example](https://raw.githubusercontent.com/michaelthoreau/projectkiwi/main/figs/example.png)
+
 
 ```Python
 import projectkiwi
