@@ -7,7 +7,9 @@ from PIL import Image
 import io
 from pydantic import BaseModel
 from typing import List, Optional
-from projectkiwi.tools import getOverlap
+from projectkiwi.tools import getOverlap, splitZXY
+import threading
+import queue
 
 class Annotation(BaseModel):
     id: int
@@ -122,7 +124,7 @@ class Connector():
         r = requests.get(url)
         r.raise_for_status()
         tileContent = r.content
-        return np.array(Image.open(io.BytesIO(tileContent)))
+        return np.asarray(Image.open(io.BytesIO(tileContent)))
 
 
     def getTileDict(self, imageryId: str):
@@ -227,21 +229,53 @@ class Connector():
     
 
     def getSuperTile(self, 
-            z: int, 
-            x: int, 
-            y: int,
+            zxy: str,
             url: str = None,
             imagery_id: str = None,
-            max_zoom: int = 22
+            max_zoom: int = 22,
+            num_threads: int = 4
     ) -> np.ndarray:
+        """Get a tile of imagery with resolution dictated by the choice of zoom
+
+        Args:
+            zxy (str): zxy for tile e.g. 12/345/678
+            url (str, optional): url template e.g. https://tile.openstreetmap.org/${z}/${x}/${y}.png . Defaults to None.
+            imagery_id (str, optional): imagery id for project kiwi managed imagery. Defaults to None.
+            max_zoom (int, optional): full resolution tiles to use. Defaults to 22.
+            num_threads (int, optional): number of threads for downloading. Defaults to 4.
+
+        Raises:
+            RuntimeError: raised if no tiles available.
+
+        Returns:
+            np.ndarray: the tile, e.g. [1024,1024,3]
+        """    
         
+        q1 = queue.Queue()
+        q2 = queue.Queue()
+
+        def worker(q1, q2):
+            while True:
+                try:
+                    i, j, url = q1.get(timeout=10)
+                    tile = self.getTile(url)
+                    q2.put((i,j,tile))
+                    q1.task_done()
+                except queue.Empty as e:
+                    return
+                except Exception as e:
+                    q2.put((i,j,None))
+                    q1.task_done()
+
+
+        z,x,y = splitZXY(zxy)
+
         # make urls
         if url is None:
             assert not imagery_id is None, "Please specify either an imagery id or url"
             urlTemplate = "https://project-kiwi-tiles.s3.amazonaws.com/" + imagery_id + "/{z}/{x}/{y}"
         else:
             urlTemplate = url
-        
 
         tile_width = 2**(max_zoom - z)
         width = 256*tile_width
@@ -251,33 +285,46 @@ class Connector():
 
         returnImg = np.zeros((width, height, channels))
         
-        numTiles = (tile_width*tile_width)
-        success = 0
-        fails = 0
         for i in range(tile_width):
             for j in range(tile_width):
                 z_prime = max_zoom
                 x_prime = x*tile_width + i
-                y_prime = (y+1)*tile_width - j
+                y_prime = (y+1)*tile_width - (j+1)
 
                 imgUrl = urlTemplate
                 imgUrl = imgUrl.replace("{z}", str(z_prime))
                 imgUrl = imgUrl.replace("{x}", str(x_prime))
                 imgUrl = imgUrl.replace("{y}", str(y_prime))
-                print(imgUrl)
 
-                try:
-                    tile = self.getTile(imgUrl)
-                    channels = tile.shape[-1]
-                    returnImg[(tile_width - (j+1))*256:(tile_width - j)*256, i*256:(i+1)*256, 0:channels] = tile
-                    success += 1
-                except Exception as e:
-                    returnImg[(tile_width - (j+1))*256:(tile_width - j)*256, i*256:(i+1)*256 :] = np.zeros((256, 256, 4))
-                    fails += 1
-                    print(f"Failed to load: {imgUrl}")
+                q1.put((i, j, imgUrl))
+        
+        for _ in range(num_threads):
+            threading.Thread(target=worker, args=(q1, q2)).start()
+        q1.join()
+        
+        success, fails = 0, 0
+        numTiles = (tile_width*tile_width)
+        for _ in range(numTiles):
+            i, j, tile = q2.get(timeout=1)
+            if tile is not None:
+                channels = tile.shape[-1]
+                returnImg[(tile_width - (j+1))*256:(tile_width - j)*256, i*256:(i+1)*256, 0:channels] = tile
+                success += 1
+            else:
+                returnImg[(tile_width - (j+1))*256:(tile_width - j)*256, i*256:(i+1)*256 :] = np.zeros((256, 256, 4))
+                fails += 1
+
         if fails == numTiles:
             raise RuntimeError("No valid tiles loaded here")
-        return returnImg[:,:,0:channels]
+
+        # always return uint8
+        returnImg = returnImg.astype(np.uint8)
+
+        # if type is RGBA, remove alpha
+        if channels <= 3:
+            return returnImg[:,:,0:channels]
+        elif channels > 3:
+            return returnImg[:,:,:3]
 
     
     def getAnnotations(self, project=None):
@@ -313,27 +360,40 @@ class Connector():
 
     def getAnnotationsForTile(
             self,
-            project: str,
+            annotations: List[Annotation],
             zxy: str,
-            overlap_threshold: float = 0.0,
-            imagery_id: Optional[str] = None
+            overlap_threshold: float = 0.2
         ) -> List[Annotation]:
+        """ Filter a set of annotations for those that have overlap with some tile
 
-        # get annotations
-        annotations = self.getAnnotations(project=project)
+        Args:
+            annotations (List[Annotation]): All annotations
+            zxy (str): The tile e.g. 12/345/678
+            overlap_threshold (float, optional): How much overlap. Defaults to 0.2.
+
+        Returns:
+            List[Annotation]: All the annotations that have enough overlap with the specified tile
+        """        
 
         annotationsInTile = []
 
         # filter annotations
         for annotation in annotations:
-            if not imagery_id is None:
-                if annotation.imagery_id != imagery_id:
-                    continue
-            
             # check overlap with tile
-            if getOverlap(annotation.coordinates, zxy) < overlap_threshold:
+            overlap = getOverlap(annotation.coordinates, zxy)
+            if overlap < overlap_threshold:
                 continue
-
             annotationsInTile.append(annotation)
 
         return annotationsInTile
+
+    def getTasks(self, queue_id):
+       
+        route = "get_tasks"
+        params = {'key': self.key, "queue_id": queue_id}
+
+        r = requests.get(self.url + route, params=params)
+        r.raise_for_status()
+        jsonResponse = r.json()
+        return jsonResponse['task']
+

@@ -97,8 +97,8 @@ def test_read_super_tile():
 
     assert len(tileList) > 0, "No tiles found"
     
-    print(tileList)
-    superTile = conn.getSuperTile(10, 262, 380, imagery_id=imagery_id, max_zoom = 13)
+    tile_zxy = "10/262/380"
+    superTile = conn.getSuperTile(tile_zxy, imagery_id=imagery_id, max_zoom = 13)
 
     assert isinstance(superTile, np.ndarray), "Failed to load tile"
     assert len(superTile.shape) == 3, "bad size for tile"

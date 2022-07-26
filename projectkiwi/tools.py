@@ -1,43 +1,72 @@
 import math
-from typing import List
+from typing import List, Union
 import numpy as np
 
-def deg2num(lat_deg, lon_deg, zoom):
-  lat_rad = math.radians(lat_deg)
-  n = 2.0 ** zoom
-  xtile = (lon_deg + 180.0) / 360.0 * n
-  ytile = (1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n
-  return (xtile, ytile)
+def deg2num(lat_deg: float, lon_deg:  float, zoom: int):
+    """Convert lat,lng to xyz tile coordinates.
+    reference: https://developers.planet.com/docs/planetschool/xyz-tiles-and-slippy-maps/
 
-def num2deg(xtile, ytile, zoom):
-  n = 2.0 ** zoom
-  lon_deg = xtile / n * 360.0 - 180.0
-  lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * ytile / n)))
-  lat_deg = math.degrees(lat_rad)
-  return (lat_deg, lon_deg)
+    Args:
+        lat_deg (float): latitude in decimal degrees
+        lon_deg (float): longitude in decimal degrees
+        zoom (int): zoom level e.g. 19
+
+    Returns:
+        x_tile (float): x in tile coordinates at specified zoom level
+        y_tile (float): y in tile coordinates at specified zoom level
+    """
+
+    lat_rad = math.radians(lat_deg)
+    n = 2.0 ** zoom
+    xtile = (lon_deg + 180.0) / 360.0 * n
+    ytile = (1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n
+    return xtile, ytile
+
+
+
+def num2deg(xtile: Union[float, int], ytile: Union[float, int], zoom: int):
+    """convert x, y, tile coordinates to lat, lng. 
+    ref: https://developers.planet.com/docs/planetschool/xyz-tiles-and-slippy-maps/
+
+    Args:
+        xtile (Union[float, int]): x position
+        ytile (Union[float, int]): y position
+        zoom (int): zoom level e.g. 19
+
+    Returns:
+        lat_deg (float): latitude in decimal degrees
+        lng_deg (float): longitude in decimal degrees
+    """
+    n = 2.0 ** zoom
+    lng_deg = xtile / n * 360.0 - 180.0
+    lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * ytile / n)))
+    lat_deg = math.degrees(lat_rad)
+    return lat_deg, lng_deg
+
 
 
 def getBboxLatLng(coords: List[List]):
-    """Get bounding box for a polygon. DIFFERENT REFERENCES BETWEEN INPUT AND OUTPUT
+    """Get bounding box for a polygon.
 
     Args:
         coords (List[List]): list of points (x,y) = (lng,lat) with bottom left reference (e.g. [[lng,lat], [lng,lat]])
 
     Returns:
         x1 (float): closest distance from left reference
-        x2 (float): furthest distance from left reference
         y1 (float): closest distance from top reference
+        x2 (float): furthest distance from left reference
         y2 (float): furthest distance from top reference
 
     """    
 
     coords = np.array(coords)
     x1 = np.min(coords[:,0])
-    x2 = np.max(coords[:,0])
     y1 = np.max(coords[:,1])
+    x2 = np.max(coords[:,0])
     y2 = np.min(coords[:,1])
 
-    return x1, x2, y1, y2
+    return x1, y1, x2, y2
+
 
 
 def getBboxTileCoords(coords: List[List], zxy: str):
@@ -48,14 +77,14 @@ def getBboxTileCoords(coords: List[List], zxy: str):
 
     Returns:
         x1 (float): closest distance from tile left side
-        x2 (float): furthest distance from tile left side
         y1 (float): closest distance from tile top side
+        x2 (float): furthest distance from tile left side
         y2 (float): furthest distance from tile top side
 
     """    
 
     # get bounding box (top left reference)
-    x1, x2, y1, y2 = getBboxLatLng(coords)
+    x1, y1, x2, y2 = getBboxLatLng(coords)
 
     z = int(zxy.split("/")[0])
     x = int(zxy.split("/")[1])
@@ -73,9 +102,16 @@ def getBboxTileCoords(coords: List[List], zxy: str):
     return x1, y1, x2, y2
 
 
-def getOverlap(coords: List[List], zxy: str) -> float:
+def getOverlap(coords: List[List], zxy: str):
+    """ Get the portion of a bounding box that is inside a tile
 
+    Args:
+        coords (List[List]): list of points in the polygon (lat,lng)
+        zxy (str): tile e.g. 12/345/678
 
+    Returns:
+        float: overlap [0,1]
+    """
     x1, x2, y1, y2 = getBboxTileCoords(coords, zxy)
 
     # get intersection area
@@ -88,3 +124,69 @@ def getOverlap(coords: List[List], zxy: str) -> float:
     return overlap_area
 
     
+
+def bboxFromCoords(coordinates: List[List], zxy: str, width: int, height: int):
+    """ Get a bounding box from a polygon (lat, lng)
+
+    Args:
+        coordinates (List[List]): List of points in polygon (lat, lng)
+        zxy (str): Tile zxy
+        width (int): Width in pixels
+        height (int): Height in pixels
+
+    Returns:
+        x1 (int): top-left x coordinate
+        y1 (int): top-left y coordinate
+        x2 (int): bottom-right x coordinate
+        y2 (int): bottom-right y coordinate
+    """
+
+    bbox = getBboxTileCoords(coordinates, zxy)
+    x1 = np.clip(bbox[0], 0, 1)*width
+    y1 = np.clip(bbox[1], 0, 1)*height
+    x2 = np.clip(bbox[2], 0, 1)*width
+    y2 = np.clip(bbox[3], 0, 1)*height
+
+    return x1, y1, x2, y2
+
+
+def bboxToCoco(x1: int, y1: int, x2: int, y2: int):
+    """ Convert two-point bbox to coco format
+
+    Args:
+        x1 (int): top-left x coordinate
+        y1 (int): top-left y coordinate
+        x2 (int): bottom-right x coordinate
+        y2 (int): bottom-right y coordinate
+
+    Returns:
+        x (int): top-left x coordinate
+        y (int): top-left y coordinate
+        w (int): box width
+        h (int): box height
+    """
+
+    w = int(x2-x1)
+    h = int(y2-y1)
+    
+    return x1, y1, w, h
+
+
+
+def splitZXY(zxy: str):
+    """ Split zxy string up in to z,x,y component
+
+    Args:
+        zxy (str): zxy string e.g. 12/345/678
+
+    Returns:
+        z: tile zoom level
+        x: tile x
+        y: tile y
+    """
+
+    z = int(zxy.split("/")[0])
+    x = int(zxy.split("/")[1])
+    y = int(zxy.split("/")[2])
+
+    return z, x, y

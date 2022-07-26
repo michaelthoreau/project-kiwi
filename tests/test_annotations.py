@@ -35,11 +35,14 @@ def test_annotations_in_tile():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    projects = conn.getProjects()
-    assert len(projects) > 0, "No project found"
+    project = conn.getProjects()[0]
 
-    annotations = conn.getAnnotationsForTile(projects[0], "12/1051/1522", imagery_id = "93650ec6508a", overlap_threshold=0.2)
+    allAnnotations = conn.getAnnotations(project=project)
 
+    annotations = conn.getAnnotationsForTile(
+            annotations=allAnnotations,
+            zxy = "12/1051/1522",
+            overlap_threshold=0.2)
 
     assert len(annotations) > 0, "No annotations found for tile"
 
@@ -50,12 +53,16 @@ def test_get_bboxes_for_tile():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    projects = conn.getProjects()
-    assert len(projects) > 0, "No project found"
+    project = conn.getProjects()[0]
+
+    allAnnotations = conn.getAnnotations(project=project)
 
     tile_zxy = "12/1051/1522"
-    annotations = conn.getAnnotationsForTile(projects[0], tile_zxy, imagery_id = "93650ec6508a", overlap_threshold=0.2)
-    
+    annotations = conn.getAnnotationsForTile(
+            annotations=allAnnotations,
+            zxy = tile_zxy,
+            overlap_threshold=0.2)
+
     assert len(annotations) > 0, "No annotations found for tile"
 
     for annotation in annotations:
