@@ -1,5 +1,3 @@
-import logging
-from matplotlib import projections
 import requests
 import json
 import numpy as np

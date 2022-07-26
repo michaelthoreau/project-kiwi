@@ -1,6 +1,4 @@
 import sys,os
-
-from sqlalchemy import over
 sys.path.insert(0, os.getcwd())
 from projectkiwi.connector import Connector
 import numpy as np
