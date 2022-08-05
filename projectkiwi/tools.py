@@ -174,7 +174,7 @@ def bboxToCoco(x1: int, y1: int, x2: int, y2: int):
 
 
 def splitZXY(zxy: str):
-    """ Split zxy string up in to z,x,y component
+    """ Split an zxy string up in to z,x,y component
 
     Args:
         zxy (str): zxy string e.g. 12/345/678
@@ -183,6 +183,14 @@ def splitZXY(zxy: str):
         z: tile zoom level
         x: tile x
         y: tile y
+
+    Example:
+        Consider splitting the zxy string "12/345/678"::
+
+            z, x, y = splitZXY("12/345/678")
+            print(z,x,y)
+            # result: 12, 345, 678
+
     """
 
     z = int(zxy.split("/")[0])
