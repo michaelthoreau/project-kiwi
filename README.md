@@ -2,14 +2,12 @@
 
 Tools to interact with project-kiwi.org
 
----
 
 ### Installation
 ```Bash
 pip install projectkiwi
 ```
 
---- 
 
 ### Getting Started
 
