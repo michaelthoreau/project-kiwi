@@ -126,10 +126,10 @@ def getOverlap(coords: List[List], zxy: str):
     
 
 def bboxFromCoords(coordinates: List[List], zxy: str, width: int, height: int):
-    """ Get a bounding box from a polygon (lat, lng)
+    """ Get a bounding box from a polygon (lng, lat)
 
     Args:
-        coordinates (List[List]): List of points in polygon (lat, lng)
+        coordinates (List[List]): List of points in polygon (lng, lat)
         zxy (str): Tile zxy
         width (int): Width in pixels
         height (int): Height in pixels

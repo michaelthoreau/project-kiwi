@@ -3,50 +3,12 @@ import json
 import numpy as np
 from PIL import Image
 import io
-from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from projectkiwi.tools import getOverlap, splitZXY
+from projectkiwi.models import Annotation
 import threading
 import queue
 
-class Annotation(BaseModel):
-    id: int
-    shape: str
-    label_id: int
-    label_name: str
-    label_color: str
-    coordinates: List[List[float]]
-    what3words: Optional[str]
-    url: Optional[str]
-    imagery_id: Optional[str]
-
-    @classmethod
-    def from_dict(cls, annotation_id: int, data: dict):
-        coordinates = []
-        for point in data['coordinate']:
-            coordinates.append([float(point[0]), float(point[1])])
-
-        
-        what3words = data['what3words']
-        if what3words == "none":
-            what3words = None
-        
-        imagery_id = data['imagery_id']
-        if imagery_id == "NULL":
-            imagery_id = None
-
-        
-        return cls(
-            id = annotation_id,
-            shape = data['shape'],
-            label_id = data['label_id'],
-            label_name = data['label_name'],
-            label_color = data['label_color'],
-            coordinates = coordinates,
-            what3words = data['what3words'],
-            url = data['url'],
-            imagery_id = data['imagery_id']
-        )
 
 
 
@@ -329,8 +291,9 @@ class Connector():
         """Get all annotations in a project
 
         Returns:
-            List: annotations
+            List[Annotation]: annotations
         """
+
         route = "get_annotations" 
         params = {'key': self.key, }
         if not project is None:
@@ -347,14 +310,28 @@ class Connector():
         try:
             annotations = []
             annotationsDict = r.json()
-            for key, item in annotationsDict.items():
-                annotations.append(Annotation.from_dict(key, item))
+            for id, data in annotationsDict.items():
+                annotations.append(Annotation.from_dict(data, id))
 
             return annotations
 
         except Exception as e:
             print("Error: Could not load annotations")
             raise e
+
+
+    def getPredictions(self, project=None):
+        """Get all predictions in a project
+
+        Returns:
+            List[Annotation]: predictions
+        """
+        
+        annotations = self.getAnnotations(project=project)
+
+        return [annotation for annotation in annotations if annotation.confidence != None]
+
+
 
     def getAnnotationsForTile(
             self,
@@ -385,7 +362,15 @@ class Connector():
 
         return annotationsInTile
 
-    def getTasks(self, queue_id):
+    def getTasks(self, queue_id: int) -> List[dict]:
+        """Get a list of tasks in a queue.
+
+        Args:
+            queue_id (int): The ID of the queue
+
+        Returns:
+            List[dict]: list of tasks, each is a dict
+        """        
        
         route = "get_tasks"
         params = {'key': self.key, "queue_id": queue_id}
@@ -395,3 +380,48 @@ class Connector():
         jsonResponse = r.json()
         return jsonResponse['task']
 
+
+    def addAnnotation(self, annotation: Annotation, project: str) -> int:
+        """Add an annotation to a project
+
+        Args:
+            annotation (Annotation): the annotation to add (note that not everything is mandatory)
+            project (str): project id
+
+        Returns:
+            int: annotation id if successful
+        """        
+        route = "add_annotation"
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+
+        annoDict = dict(annotation)
+        annoDict['project'] = project
+        annoDict['key'] = self.key
+        r = requests.post(self.url + route, data=json.dumps(annoDict), headers=headers)
+        r.raise_for_status()
+        jsonResponse = r.json()
+        return jsonResponse['annotation_id']
+    
+
+    def addPrediction(self, annotation: Annotation, project: str) -> int:
+        """Add a prediction to a project
+
+        Args:
+            annotation (Annotation): an annotation object with a confidence value
+            project (str): project id
+
+        Returns:
+            int: annotation id if successful
+        """       
+
+        assert not annotation.confidence is None, "No confidence for prediction"
+        route = "add_prediction"
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+
+        annoDict = dict(annotation)
+        annoDict['project'] = project
+        annoDict['key'] = self.key
+        r = requests.post(self.url + route, data=json.dumps(annoDict), headers=headers)
+        r.raise_for_status()
+        jsonResponse = r.json()
+        return jsonResponse['annotation_id']

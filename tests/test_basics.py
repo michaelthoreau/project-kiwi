@@ -102,3 +102,16 @@ def test_read_super_tile():
 
     assert isinstance(superTile, np.ndarray), "Failed to load tile"
     assert len(superTile.shape) == 3, "bad size for tile"
+
+def test_get_tasks():
+    API_KEY = os.environ['PROJECT_KIWI_API_KEY']
+
+    conn = Connector(API_KEY, TEST_URL)
+
+    tasks = conn.getTasks(queue_id = 13)
+    print(tasks)
+
+    assert len(tasks) > 1, "Couldn't load tasks"
+
+    
+
