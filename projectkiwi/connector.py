@@ -55,23 +55,6 @@ class Connector():
         return jsonResponse
 
 
-    def getTiles(self, imageryId: str):
-        """Get a list of tiles for a given imagery id
-
-        Args:
-            imageryId (str): ID of the imagery to retrieve a list of tiles for
-
-        Returns:
-            list: list of tile urls
-        """        
-        route = "get_tile_list"
-        params = {'key': self.key, 'imagery_id': imageryId}
-
-        r = requests.get(self.url + route, params=params)
-        r.raise_for_status()
-        jsonResponse = r.json()
-        return jsonResponse
-
     def getTile(self, url):
         """Get a tile in numpy array form
 
@@ -87,26 +70,26 @@ class Connector():
         return np.asarray(Image.open(io.BytesIO(tileContent)))
 
 
-    def getTileDict(self, imageryId: str):
+    def getTileList(self, imageryId: str, zoom: int) -> List:
         """Get a dictionary of tiles for a given imagery id
 
         Args:
             imageryId (str): ID of the imagery to retrieve a list of tiles for
+            zoom (int): Zoom level
 
         Returns:
-            dict: a dictionary of tiles with zxy keys
-        """        
+            list: a list of tiles with zxy keys
+        """
         route = "get_tile_list"
-        params = {'key': self.key, 'imagery_id': imageryId}
+        params = {
+            'key': self.key, 
+            'imagery_id': imageryId, 
+            'zoom': zoom}
 
         r = requests.get(self.url + route, params=params)
         r.raise_for_status()
-        jsonResponse = r.json()
-        dict = {}
-        for tile in jsonResponse:
-            dict[tile['zxy']] = tile['url']
-        return dict
-
+        tiles = r.json()
+        return tiles
 
 
     def getImageryStatus(self, imageryId: str):
@@ -124,20 +107,6 @@ class Connector():
         r = requests.get(self.url + route, params=params)
         r.raise_for_status()
         return r.json()['status']
-
-
-    def setImageryStatus(self, imageryId: str, status: str):
-        """Set the status for imagery e.g. when the upload is complete
-
-        Args:
-            imageryId (str): Imagery id
-            status (str): status e.g. "awaiting processing"
-        """
-        route = "set_imagery_status" 
-        params = {'key': self.key, 'imagery_id': imageryId, 'status': status}
-
-        r = requests.get(self.url + route, params=params)
-        r.raise_for_status()
 
     def getProjects(self):
         """Get a list of projects you have access to
@@ -168,7 +137,7 @@ class Connector():
             name (str): Name for the imagery
 
         Returns:
-            int: imagery id
+            str: imagery id
         """       
         
         # get presigned upload url
@@ -180,11 +149,10 @@ class Connector():
         url = jsonResponse['url']
         
         # upload
-        r = requests.put(url, data=open(filename, 'rb'), headers={'Content-type': ''})
-        r.raise_for_status()
+        with open(filename, 'rb') as data:
+            r = requests.put(url, data=data, headers={'Content-type': ''})
+            r.raise_for_status()
 
-        # set the status - triggers processing
-        self.setImageryStatus(jsonResponse['imagery_id'], "awaiting processing")
         return jsonResponse['imagery_id']
     
 

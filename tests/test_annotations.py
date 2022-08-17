@@ -92,7 +92,6 @@ def test_dict_conversion():
 
 
 
-
 def test_add_annotation():
     API_KEY = os.environ['PROJECT_KIWI_API_KEY']
 

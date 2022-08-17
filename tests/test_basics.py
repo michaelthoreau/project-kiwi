@@ -48,7 +48,7 @@ def test_get_tiles():
     
     assert not imagery_id is None, "no test imagery found"
 
-    tileList = conn.getTiles(imagery_id)
+    tileList = conn.getTileList(imagery_id, 13)
 
     assert len(tileList) > 0, "No tiles found"
 
@@ -68,7 +68,7 @@ def test_read_tile():
     
     assert not imagery_id is None, "no test imagery found"
 
-    tileList = conn.getTiles(imagery_id)
+    tileList = conn.getTileList(imagery_id, 13)
 
     assert len(tileList) > 0, "No tiles found"
 
@@ -92,10 +92,6 @@ def test_read_super_tile():
             break
     
     assert not imagery_id is None, "no test imagery found"
-
-    tileList = conn.getTiles(imagery_id)
-
-    assert len(tileList) > 0, "No tiles found"
     
     tile_zxy = "10/262/380"
     superTile = conn.getSuperTile(tile_zxy, imagery_id=imagery_id, max_zoom = 13)
@@ -108,7 +104,7 @@ def test_get_tasks():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    tasks = conn.getTasks(queue_id = 13)
+    tasks = conn.getTasks(queue_id = 15)
     print(tasks)
 
     assert len(tasks) > 1, "Couldn't load tasks"

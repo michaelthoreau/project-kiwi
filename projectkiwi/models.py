@@ -6,7 +6,6 @@ class Annotation(BaseModel):
     shape: str
     label_id: int
     coordinates: List[List[float]]
-    what3words: Optional[str]
     url: Optional[str]
     imagery_id: Optional[str]
     confidence: Optional[float]
@@ -20,10 +19,6 @@ class Annotation(BaseModel):
         for point in data['coordinates']:
             coordinates.append([float(point[0]), float(point[1])])
 
-        
-        what3words = data['what3words']
-        if what3words == "none":
-            what3words = None
         
         imagery_id = data['imagery_id']
         if imagery_id == "NULL":
@@ -44,7 +39,6 @@ class Annotation(BaseModel):
             label_name = data['label_name'],
             label_color = data['label_color'],
             coordinates = coordinates,
-            what3words = data['what3words'],
             url = data['url'],
             imagery_id = data['imagery_id'],
             confidence=confidence
