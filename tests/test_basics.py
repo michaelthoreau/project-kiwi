@@ -28,9 +28,11 @@ def test_get_imagery():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    imageryList = conn.getImagery()
+    project = conn.getProjects()[0]
 
-    assert len(imageryList) >= 3, "Missing Imagery"
+    imagery = conn.getImagery(project_id=project.id)
+
+    assert len(imagery) >= 3, "Missing Imagery"
 
 
 def test_get_tiles():
@@ -38,19 +40,21 @@ def test_get_tiles():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    imageryList = conn.getImagery()
+    project = conn.getProjects()[0]
+
+    imagery = conn.getImagery(project_id=project.id)
 
     imagery_id = None
-    for imagery in imageryList:
-        if imagery['name'] == "pytest":
-            imagery_id = imagery['id']
+    for layer in imagery:
+        if layer.name == "pytest":
+            imagery_id = layer.id
             break
     
     assert not imagery_id is None, "no test imagery found"
 
-    tileList = conn.getTileList(imagery_id, 13)
+    tiles = conn.getTileList(imagery_id, 13)
 
-    assert len(tileList) > 0, "No tiles found"
+    assert len(tiles) > 0, "No tiles found"
 
 
 def test_read_tile():
@@ -58,12 +62,14 @@ def test_read_tile():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    imageryList = conn.getImagery()
+    project = conn.getProjects()[0]
+
+    imagery = conn.getImagery(project_id=project.id)
 
     imagery_id = None
-    for imagery in imageryList:
-        if imagery['name'] == "pytest":
-            imagery_id = imagery['id']
+    for layer in imagery:
+        if layer.name == "pytest":
+            imagery_id = layer.id
             break
     
     assert not imagery_id is None, "no test imagery found"
@@ -72,7 +78,7 @@ def test_read_tile():
 
     assert len(tileList) > 0, "No tiles found"
 
-    tile = conn.getTile(tileList[-1]['url'])
+    tile = conn.getTile(tileList[-1].url)
     assert isinstance(tile, np.ndarray), "Failed to load tile"
     assert len(tile.shape) == 3, "bad size for tile"
 
@@ -83,31 +89,19 @@ def test_read_super_tile():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    imageryList = conn.getImagery()
+    project = conn.getProjects()[0]
 
-    imagery_id = None
-    for imagery in imageryList:
-        if imagery['name'] == "pytest":
-            imagery_id = imagery['id']
-            break
+    imagery = conn.getImagery(project_id=project.id)
+
+    pytest_layer = [layer for layer in imagery if layer.name == "pytest"][0]
+    assert not pytest_layer is None, "no test imagery found"
     
-    assert not imagery_id is None, "no test imagery found"
-    
-    tile_zxy = "10/262/380"
-    superTile = conn.getSuperTile(tile_zxy, imagery_id=imagery_id, max_zoom = 13)
+    superTile = conn.getSuperTile(
+            zxy         = "10/262/380", 
+            url         = pytest_layer.url,
+            max_zoom    = pytest_layer.max_zoom)
 
     assert isinstance(superTile, np.ndarray), "Failed to load tile"
     assert len(superTile.shape) == 3, "bad size for tile"
 
-def test_get_tasks():
-    API_KEY = os.environ['PROJECT_KIWI_API_KEY']
-
-    conn = Connector(API_KEY, TEST_URL)
-
-    tasks = conn.getTasks(queue_id = 15)
-    print(tasks)
-
-    assert len(tasks) > 1, "Couldn't load tasks"
-
-    
 

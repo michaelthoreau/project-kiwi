@@ -1,3 +1,4 @@
+from turtle import st
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -29,7 +30,7 @@ class Annotation(BaseModel):
             confidence = None
         
         if annotation_id is None:
-            annotation_id = data['id']
+            annotation_id = int(data['id'])
 
         
         return cls(
@@ -43,3 +44,45 @@ class Annotation(BaseModel):
             imagery_id = data['imagery_id'],
             confidence=confidence
         )
+
+
+
+class Project(BaseModel):
+    name: str
+    id: str
+    user_login: str
+
+    @classmethod
+    def from_dict(cls, data: dict):
+
+        return cls(
+            name = data['name'],
+            id = data['project_id'],
+            user_login = data['user_login']
+        )
+
+class ImageryLayer(BaseModel):
+    id: str
+    project: str
+    name: str
+    url: str
+    attribution: str
+    size_mb: Optional[float]
+    bounds: Optional[List[float]]
+    min_zoom: Optional[int]
+    max_zoom: Optional[int]
+    status: Optional[str]
+
+class TilePath(BaseModel):
+    zxy: str
+    url: str
+
+
+class Task(BaseModel):
+    complete: bool
+    id: int
+    imagery_id: str
+    queue: int
+    submitter_login: Optional[str]
+    zxy: str
+

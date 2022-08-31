@@ -5,7 +5,7 @@ from PIL import Image
 import io
 from typing import List
 from projectkiwi.tools import getOverlap, splitZXY
-from projectkiwi.models import Annotation
+from projectkiwi.models import Annotation, Project, ImageryLayer, TilePath, Task
 import threading
 import queue
 
@@ -19,43 +19,40 @@ class Connector():
         Args:
             key (str): API key.
             url (str, optional): url for api, in case of multiple instances. Defaults to "https://project-kiwi.org/api/".
-
-        Raises:
-            ValueError: API key must be supplied.
-        """        
-        if key is None:
-            raise ValueError("API key missing")
+        """
 
         self.key = key
         self.url = url
 
 
-    def getImagery(self, project=None):
-        """Get a list of imagery
+    def getImagery(self, 
+            project_id: str = None) -> List[ImageryLayer]:
+        """Get a list of imagery layers for a project
 
         Args:
-            project (str, optional): ID of the project to get all the imagery for, by default, all projects associated with user.
+            project (str): ID of the project to get all the imagery for.
 
         Returns:
-            json: list of imagery
+            List[ImageryLayer]: list of imagery layers
         """        
+        
         route = "get_imagery"
-        params = {'key': self.key}
-        if not project is None:
-            params['project'] = project
-        else:
-            projects = self.getProjects()
-            assert len(projects) > 0, "No projects found"
-            assert len(projects) == 1, "Multiple projects found, please specify a single project"
-            params['project'] = projects[0]
+        params = {
+            'key': self.key, 
+            'project': project_id
+        }
 
         r = requests.get(self.url + route, params=params)
         r.raise_for_status()
-        jsonResponse = r.json()
-        return jsonResponse
+        imageryList = r.json()
+        imagery = []
+        for layer in imageryList:
+            imagery.append(ImageryLayer(**layer))
+        assert len(imageryList) == len(imagery), "Failed to parse imagery"
+        return imagery
 
 
-    def getTile(self, url):
+    def getTile(self, url) -> np.ndarray:
         """Get a tile in numpy array form
 
         Args:
@@ -70,49 +67,56 @@ class Connector():
         return np.asarray(Image.open(io.BytesIO(tileContent)))
 
 
-    def getTileList(self, imageryId: str, zoom: int) -> List:
-        """Get a dictionary of tiles for a given imagery id
+    def getTileList(self, 
+            imagery_id: str, 
+            zoom: int) -> List[TilePath]:
+        """Get a list of tiles for a given imagery id
 
         Args:
             imageryId (str): ID of the imagery to retrieve a list of tiles for
             zoom (int): Zoom level
 
         Returns:
-            list: a list of tiles with zxy keys
+            List[TilePath]: A list of tiles with zxy and url
         """
         route = "get_tile_list"
         params = {
             'key': self.key, 
-            'imagery_id': imageryId, 
+            'imagery_id': imagery_id, 
             'zoom': zoom}
 
         r = requests.get(self.url + route, params=params)
         r.raise_for_status()
-        tiles = r.json()
+        tileList = r.json()
+        tiles = []
+        for tile in tileList:
+            tiles.append(TilePath(**tile))
+        assert len(tiles) == len(tileList), "Failed to parse tiles"
         return tiles
 
 
-    def getImageryStatus(self, imageryId: str):
+    def getImageryStatus(self, imagery_id: str) -> str:
         """ Get the status of imagery
 
         Args:
-            imageryId (str): Imagery id
+            imagery_id (str): Imagery id
 
         Returns:
             str: status
         """        
         route = "get_imagery_status"
-        params = {'key': self.key, 'imagery_id': imageryId}
+        params = {'key': self.key, 'imagery_id': imagery_id}
 
         r = requests.get(self.url + route, params=params)
         r.raise_for_status()
         return r.json()['status']
 
-    def getProjects(self):
-        """Get a list of projects you have access to
+
+    def getProjects(self) -> List[Project]:
+        """Get a list of projects for a user
 
         Returns:
-            List: projects
+            List[Projects]: projects
         """
         route = "get_projects" 
         params = {'key': self.key}
@@ -121,15 +125,20 @@ class Connector():
         r.raise_for_status()
 
         try:
-            projects = r.json()['projects']
-            assert len(projects) > 0, "Error: No projects found"
+            projectList = r.json()['projects']
+            assert len(projectList) > 0, "Error: No projects found"
+            projects = []
+            for proj in projectList:
+                projects.append(Project.from_dict(proj))
+            assert len(projectList) == len(projects), \
+                    f"Error: Could not parse projects, {projectList}"
             return projects
         except Exception as e:
-            print("Error: Could not find projects")
+            print("Error: Could not get projects")
             raise e
         
 
-    def addImagery(self, filename: str, name: str):
+    def addImagery(self, filename: str, name: str) -> str:
         """ Add imagery to project-kiwi.org
 
         Args:
@@ -158,8 +167,7 @@ class Connector():
 
     def getSuperTile(self, 
             zxy: str,
-            url: str = None,
-            imagery_id: str = None,
+            url: str,
             max_zoom: int = 22,
             num_threads: int = 4
     ) -> np.ndarray:
@@ -167,8 +175,7 @@ class Connector():
 
         Args:
             zxy (str): zxy for tile e.g. 12/345/678
-            url (str, optional): url template e.g. https://tile.openstreetmap.org/${z}/${x}/${y}.png . Defaults to None.
-            imagery_id (str, optional): imagery id for project kiwi managed imagery. Defaults to None.
+            url (str): url template e.g. https://tile.openstreetmap.org/${z}/${x}/${y}.png
             max_zoom (int, optional): full resolution tiles to use. Defaults to 22.
             num_threads (int, optional): number of threads for downloading. Defaults to 4.
 
@@ -197,14 +204,6 @@ class Connector():
 
 
         z,x,y = splitZXY(zxy)
-
-        # make urls
-        if url is None:
-            assert not imagery_id is None, "Please specify either an imagery id or url"
-            urlTemplate = "https://project-kiwi-tiles.s3.amazonaws.com/" + imagery_id + "/{z}/{x}/{y}"
-        else:
-            urlTemplate = url
-
         tile_width = 2**(max_zoom - z)
         width = 256*tile_width
         assert width < 10000, "Resultant image would be too large (100MP limit), try reducing max zoom or increasing super tile zoom"
@@ -219,10 +218,12 @@ class Connector():
                 x_prime = x*tile_width + i
                 y_prime = (y+1)*tile_width - (j+1)
 
-                imgUrl = urlTemplate
+                imgUrl = url
+                imgUrl = imgUrl.replace("{s}.", "")
                 imgUrl = imgUrl.replace("{z}", str(z_prime))
                 imgUrl = imgUrl.replace("{x}", str(x_prime))
                 imgUrl = imgUrl.replace("{y}", str(y_prime))
+                imgUrl = imgUrl.replace("{key}", self.key)
 
                 q1.put((i, j, imgUrl))
         
@@ -255,22 +256,20 @@ class Connector():
             return returnImg[:,:,:3]
 
     
-    def getAnnotations(self, project=None):
+    def getAnnotations(self, project_id: str) -> List[Annotation]:
         """Get all annotations in a project
+        Args:
+            project_id (str): id for the project to get the predictions for
 
         Returns:
             List[Annotation]: annotations
         """
 
-        route = "get_annotations" 
-        params = {'key': self.key, }
-        if not project is None:
-            params['project'] = project
-        else:
-            projects = self.getProjects()
-            assert len(projects) > 0, "No projects found"
-            assert len(projects) == 1, "Multiple projects found, please specify a single project"
-            params['project'] = projects[0]
+        route = "get_annotations"
+        params = {
+            'key': self.key,
+            'project': project_id
+        }
 
         r = requests.get(self.url + route, params=params)
         r.raise_for_status()
@@ -278,9 +277,9 @@ class Connector():
         try:
             annotations = []
             annotationsDict = r.json()
-            for id, data in annotationsDict.items():
-                annotations.append(Annotation.from_dict(data, id))
-
+            for annotation_id, data in annotationsDict.items():
+                annotations.append(Annotation.from_dict(data, annotation_id))
+            assert len(annotationsDict) == len(annotations), "ERROR: could not parse annotations"
             return annotations
 
         except Exception as e:
@@ -288,14 +287,15 @@ class Connector():
             raise e
 
 
-    def getPredictions(self, project=None):
+    def getPredictions(self, project_id: str) -> List[Annotation]:
         """Get all predictions in a project
-
+        Args:
+            project_id (str): id for the project to get the predictions for
         Returns:
             List[Annotation]: predictions
         """
         
-        annotations = self.getAnnotations(project=project)
+        annotations = self.getAnnotations(project_id=project_id)
 
         return [annotation for annotation in annotations if annotation.confidence != None]
 
@@ -310,7 +310,7 @@ class Connector():
         """ Filter a set of annotations for those that have overlap with some tile
 
         Args:
-            annotations (List[Annotation]): All annotations
+            annotations (List[Annotation]): Annotations to filter
             zxy (str): The tile e.g. 12/345/678
             overlap_threshold (float, optional): How much overlap. Defaults to 0.2.
 
@@ -330,14 +330,14 @@ class Connector():
 
         return annotationsInTile
 
-    def getTasks(self, queue_id: int) -> List[dict]:
+    def getTasks(self, queue_id: int) -> List[Task]:
         """Get a list of tasks in a queue.
 
         Args:
             queue_id (int): The ID of the queue
 
         Returns:
-            List[dict]: list of tasks, each is a dict
+            List[Task]: list of tasks
         """        
        
         route = "get_tasks"
@@ -345,8 +345,17 @@ class Connector():
 
         r = requests.get(self.url + route, params=params)
         r.raise_for_status()
-        jsonResponse = r.json()
-        return jsonResponse['task']
+        data = r.json()
+        assert data['success'] == True, "Failed to get tasks"
+        
+        taskList = data['task']
+        tasks = []
+        for task in taskList:
+            tasks.append(Task(**task))
+        
+        assert len(tasks) == len(taskList), "Failed to parse tasks"
+
+        return tasks
 
 
     def addAnnotation(self, annotation: Annotation, project: str) -> int:

@@ -22,8 +22,10 @@ def test_read_annotations():
     API_KEY = os.environ['PROJECT_KIWI_API_KEY']
 
     conn = Connector(API_KEY, TEST_URL)
+    
+    project = conn.getProjects()[0]
 
-    annotations = conn.getAnnotations()
+    annotations = conn.getAnnotations(project_id=project.id)
 
     assert len(annotations) >= 1, "Missing Annotations"
 
@@ -35,7 +37,7 @@ def test_annotations_in_tile():
 
     project = conn.getProjects()[0]
 
-    allAnnotations = conn.getAnnotations(project=project)
+    allAnnotations = conn.getAnnotations(project_id=project.id)
 
     annotations = conn.getAnnotationsForTile(
             annotations=allAnnotations,
@@ -52,7 +54,7 @@ def test_get_bboxes_for_tile():
 
     project = conn.getProjects()[0]
 
-    allAnnotations = conn.getAnnotations(project=project)
+    allAnnotations = conn.getAnnotations(project_id=project.id)
 
     tile_zxy = "12/1051/1522"
     annotations = conn.getAnnotationsForTile(
@@ -72,7 +74,9 @@ def test_read_predictions():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    predictions = conn.getPredictions()
+    project = conn.getProjects()[0]
+
+    predictions = conn.getPredictions(project_id=project.id)
 
     assert len(predictions) >= 1, "Missing predictions"
 
@@ -84,7 +88,7 @@ def test_dict_conversion():
 
     project = conn.getProjects()[0]
 
-    annotation = conn.getAnnotations(project=project)[0]
+    annotation = conn.getAnnotations(project_id=project.id)[0]
 
     annoDict = dict(annotation)
     newAnnotation = Annotation.from_dict(annoDict)
@@ -112,8 +116,8 @@ def test_add_annotation():
     )
 
 
-    success = conn.addAnnotation(annotation, project)
-    assert success, "Failed to add annotation"
+    annotation_id = conn.addAnnotation(annotation, project.id)
+    assert annotation_id, "Failed to add annotation"
 
 def test_add_prediction():
     API_KEY = os.environ['PROJECT_KIWI_API_KEY']
@@ -136,5 +140,5 @@ def test_add_prediction():
     )
 
 
-    success = conn.addPrediction(prediction, project)
-    assert success, "Failed to add prediction"
+    annotation_id = conn.addPrediction(prediction, project.id)
+    assert annotation_id, "Failed to add prediction"
