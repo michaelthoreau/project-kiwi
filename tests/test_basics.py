@@ -2,6 +2,7 @@ import sys,os
 sys.path.insert(0, os.getcwd())
 from projectkiwi.connector import Connector
 import numpy as np
+import requests
 
 TEST_URL = "https://sandbox.project-kiwi.org/api/"
 
@@ -104,4 +105,26 @@ def test_read_super_tile():
     assert isinstance(superTile, np.ndarray), "Failed to load tile"
     assert len(superTile.shape) == 3, "bad size for tile"
 
+def test_add_imagery():
+    API_KEY = os.environ['PROJECT_KIWI_API_KEY']
+
+    conn = Connector(API_KEY, TEST_URL)
+
+    project = conn.getProjects()[0]
+
+    before_imagery = conn.getImagery(project_id=project.id)
+
+    url = "https://project-kiwi-web.s3.amazonaws.com/example-imagery/sammamish_river_ortho.tif"
+    response = requests.get(url, stream=True)
+
+    with open("sammamish_river_ortho.tif", "wb") as f:
+        for chunk in response.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    imagery_id = conn.addImagery("sammamish_river_ortho.tif", "sammamish river", project.id)
+
+    imagery = conn.getImagery(project_id=project.id)
+    assert imagery_id in [layer.id for layer in imagery], "Failed to upload imagery"
+    
+   
 

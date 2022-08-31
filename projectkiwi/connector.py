@@ -137,12 +137,13 @@ class Connector():
             raise e
         
 
-    def addImagery(self, filename: str, name: str) -> str:
+    def addImagery(self, filename: str, name: str, project_id: str) -> str:
         """ Add imagery to project-kiwi.org
 
         Args:
             filename (str): Path to the file to be uploaded
             name (str): Name for the imagery
+            project_id (str): Id of the project to add the layer to
 
         Returns:
             str: imagery id
@@ -150,7 +151,12 @@ class Connector():
         
         # get presigned upload url
         route = "get_imagery_upload_url"
-        params = {'key': self.key, 'filename': filename, 'name': name}
+        params = {
+            'key': self.key, 
+            'filename': filename, 
+            'name': name,
+            'project_id': project_id
+        }
         r = requests.get(self.url + route, params=params)
         r.raise_for_status()
         jsonResponse = r.json()
