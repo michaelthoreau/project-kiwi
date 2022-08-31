@@ -1,0 +1,5 @@
+numpy
+pillow
+pydantic
+requests
+myst-parser
