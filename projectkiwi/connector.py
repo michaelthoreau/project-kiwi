@@ -124,11 +124,11 @@ class Connector():
         r.raise_for_status()
 
         try:
-            projectList = r.json()['projects']
+            projectList = r.json()
             assert len(projectList) > 0, "Error: No projects found"
             projects = []
             for proj in projectList:
-                projects.append(Project.from_dict(proj))
+                projects.append(Project(**proj))
             assert len(projectList) == len(projects), \
                     f"Error: Could not parse projects, {projectList}"
             return projects
