@@ -2,7 +2,7 @@ from setuptools import setup
 from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
-VERSION = '0.3.4'
+VERSION = '0.4.0'
 
 setup(
   name = 'projectkiwi',
@@ -22,7 +22,6 @@ setup(
     'pillow',
     'pydantic',
     'requests',
-    'myst-parser'
   ],
   classifiers=[
         "Programming Language :: Python :: 3",
