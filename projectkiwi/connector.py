@@ -25,8 +25,7 @@ class Connector():
         self.url = url
 
 
-    def getImagery(self, 
-            project_id: str = None) -> List[ImageryLayer]:
+    def getImagery(self, project_id: str) -> List[ImageryLayer]:
         """Get a list of imagery layers for a project
 
         Args:
