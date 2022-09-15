@@ -11,7 +11,7 @@ def test_get_tasks():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    tasks = conn.getTasks(queue_id = 15)
+    tasks = conn.getTasks(queue_id = 14)
     print(tasks)
 
     assert len(tasks) > 1, "Couldn't load tasks"

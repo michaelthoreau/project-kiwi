@@ -75,6 +75,23 @@ def test_read_predictions():
     conn = Connector(API_KEY, TEST_URL)
 
     project = conn.getProjects()[0]
+    prediction = Annotation(
+        shape="Polygon",
+        label_id=374,
+        imagery_id="93650ec6508a",
+        coordinates=[
+            [-87.612448, 41.867452], 
+            [-87.605238, 41.867452], 
+            [-87.605238, 41.852301], 
+            [-87.612448, 41.852301], 
+            [-87.612448, 41.867452]],
+        confidence = 0.33
+    )
+
+
+    annotation_id = conn.addPrediction(prediction, project.id)
+    assert annotation_id, "Failed to add prediction"
+
 
     predictions = conn.getPredictions(project_id=project.id)
 
@@ -142,3 +159,46 @@ def test_add_prediction():
 
     annotation_id = conn.addPrediction(prediction, project.id)
     assert annotation_id, "Failed to add prediction"
+
+
+
+def test_remove_all_predictions():
+    API_KEY = os.environ['PROJECT_KIWI_API_KEY']
+
+    conn = Connector(API_KEY, TEST_URL)
+
+    project = conn.getProjects()[0]
+
+    conn.removeAllPredictions(project.id)
+    
+    prediction = Annotation(
+        shape="Polygon",
+        label_id=374,
+        imagery_id="93650ec6508a",
+        coordinates=[
+            [-87.612448, 41.867452], 
+            [-87.605238, 41.867452], 
+            [-87.605238, 41.852301], 
+            [-87.612448, 41.852301], 
+            [-87.612448, 41.867452]],
+        confidence = 0.33
+    )
+
+    annotation_count_1 = len(conn.getAnnotations(project_id=project.id))
+
+    annotation_id = conn.addPrediction(prediction, project.id)
+    assert annotation_id, "Failed to add prediction"
+
+    annotation_count_2 = len(conn.getAnnotations(project_id=project.id))
+
+    assert annotation_count_2 - annotation_count_1 == 1, "Failed to add prediction"
+
+    conn.removeAllPredictions(project.id)
+
+    annotation_count_3 = len(conn.getAnnotations(project_id=project.id))
+
+    assert (annotation_count_3 == annotation_count_1 and \
+         annotation_count_3 == annotation_count_2 - 1), "Failed to remove predictions"
+    
+
+

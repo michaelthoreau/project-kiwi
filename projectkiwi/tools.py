@@ -198,3 +198,20 @@ def splitZXY(zxy: str):
     y = int(zxy.split("/")[2])
 
     return z, x, y
+
+
+def urlFromZxy(z: int, x: int, y: int, imagery_id: str, baseUrl: str, key: str) -> str:
+    """Generate a url given a zxy and an imagery id
+
+    Args:
+        z (int): zoom
+        x (int): x tile
+        y (int): y tile
+        imagery_id (str): id of the imagery
+        baseUrl (str): base url e.g. https://project-kiwi.org/
+        key (str): api key
+
+    Returns:
+        str: url to download the tile
+    """    
+    return f"{baseUrl}/api/get_tile/{imagery_id}/{z}/{x}/{y}?key={key}"

@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import io
 from typing import List
-from projectkiwi.tools import getOverlap, splitZXY
+from projectkiwi.tools import getOverlap, splitZXY, urlFromZxy
 from projectkiwi.models import Annotation, Project, ImageryLayer, TilePath, Task
 import threading
 import queue
@@ -13,7 +13,7 @@ import queue
 
 
 class Connector():
-    def __init__(self, key, url="https://project-kiwi.org/api/"):
+    def __init__(self, key, url="https://project-kiwi.org/"):
         """constructor
 
         Args:
@@ -35,7 +35,7 @@ class Connector():
             List[ImageryLayer]: list of imagery layers
         """        
         
-        route = "get_imagery"
+        route = "api/get_imagery"
         params = {
             'key': self.key, 
             'project': project_id
@@ -51,7 +51,7 @@ class Connector():
         return imagery
 
 
-    def getTile(self, url) -> np.ndarray:
+    def readTile(self, url) -> np.ndarray:
         """Get a tile in numpy array form
 
         Args:
@@ -64,6 +64,29 @@ class Connector():
         r.raise_for_status()
         tileContent = r.content
         return np.asarray(Image.open(io.BytesIO(tileContent)))
+    
+    def getTile(self, 
+            z: int,
+            x: int,
+            y: int,
+            imagery_id: str
+        ) -> np.ndarray:
+        """Download a tile given the z,x,y and id
+
+        Args:
+            z (int): zoom
+            x (int): x tile
+            y (int): y tile
+            imagery_id (str): id of the imagery
+
+        Returns:
+            np.ndarray: numpy array of tile
+        """        
+
+        url = urlFromZxy(z, x, y, imagery_id, self.url, self.key)
+        
+        return self.readTile(url)
+
 
 
     def getTileList(self, 
@@ -78,7 +101,7 @@ class Connector():
         Returns:
             List[TilePath]: A list of tiles with zxy and url
         """
-        route = "get_tile_list"
+        route = "api/get_tile_list"
         params = {
             'key': self.key, 
             'imagery_id': imagery_id, 
@@ -103,7 +126,7 @@ class Connector():
         Returns:
             str: status
         """        
-        route = "get_imagery_status"
+        route = "api/get_imagery_status"
         params = {'key': self.key, 'imagery_id': imagery_id}
 
         r = requests.get(self.url + route, params=params)
@@ -117,7 +140,7 @@ class Connector():
         Returns:
             List[Projects]: projects
         """
-        route = "get_projects" 
+        route = "api/get_projects" 
         params = {'key': self.key}
 
         r = requests.get(self.url + route, params=params)
@@ -150,7 +173,7 @@ class Connector():
         """       
         
         # get presigned upload url
-        route = "get_imagery_upload_url"
+        route = "api/get_imagery_upload_url"
         params = {
             'key': self.key, 
             'filename': filename, 
@@ -198,7 +221,7 @@ class Connector():
             while True:
                 try:
                     i, j, url = q1.get(timeout=10)
-                    tile = self.getTile(url)
+                    tile = self.readTile(url)
                     q2.put((i,j,tile))
                     q1.task_done()
                 except queue.Empty as e:
@@ -270,7 +293,7 @@ class Connector():
             List[Annotation]: annotations
         """
 
-        route = "get_annotations"
+        route = "api/get_annotations"
         params = {
             'key': self.key,
             'project': project_id
@@ -345,7 +368,7 @@ class Connector():
             List[Task]: list of tasks
         """        
        
-        route = "get_tasks"
+        route = "api/get_tasks"
         params = {'key': self.key, "queue_id": queue_id}
 
         r = requests.get(self.url + route, params=params)
@@ -373,7 +396,7 @@ class Connector():
         Returns:
             int: annotation id if successful
         """        
-        route = "add_annotation"
+        route = "api/add_annotation"
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
         annoDict = dict(annotation)
@@ -397,7 +420,7 @@ class Connector():
         """       
 
         assert not annotation.confidence is None, "No confidence for prediction"
-        route = "add_prediction"
+        route = "api/add_prediction"
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
         annoDict = dict(annotation)
@@ -407,3 +430,32 @@ class Connector():
         r.raise_for_status()
         jsonResponse = r.json()
         return jsonResponse['annotation_id']
+
+    def getImageryUrl(self, imagery_id: str, project_id: str) -> str:
+        """Get the url for imagery from it's id
+
+        Args:
+            imagery_id (str): Id for the imagery
+            project_id (str): Project to look in
+
+        Returns:
+            str: The url template
+        """        
+        imagery = self.getImagery(project_id)
+        imagery_url = [image.url for image in imagery if image.id == imagery_id][0]
+        return imagery_url
+        
+    def removeAllPredictions(self, project_id: str):
+        """Remove all predictions in a project
+
+        Args:
+            project_id (str): project id
+        """    
+
+        route = "api/remove_all_predictions" 
+        params = {'key': self.key, 'project': project_id}
+
+        r = requests.delete(self.url + route, 
+                headers={'Content-Type': 'application/json'},
+                data=json.dumps(params))
+        r.raise_for_status()

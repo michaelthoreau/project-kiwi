@@ -1,10 +1,11 @@
 import sys,os
 sys.path.insert(0, os.getcwd())
 from projectkiwi.connector import Connector
+from projectkiwi.tools import splitZXY
 import numpy as np
 import requests
 
-TEST_URL = "https://sandbox.project-kiwi.org/api/"
+TEST_URL = "https://sandbox.project-kiwi.org/"
 
 def test_conn():
     API_KEY = os.environ['PROJECT_KIWI_API_KEY']
@@ -79,7 +80,35 @@ def test_read_tile():
 
     assert len(tileList) > 0, "No tiles found"
 
-    tile = conn.getTile(tileList[-1].url)
+    tile = conn.readTile(tileList[-1].url)
+    assert isinstance(tile, np.ndarray), "Failed to load tile"
+    assert len(tile.shape) == 3, "bad size for tile"
+
+
+
+def test_get_tile():
+    API_KEY = os.environ['PROJECT_KIWI_API_KEY']
+
+    conn = Connector(API_KEY, TEST_URL)
+
+    project = conn.getProjects()[0]
+
+    imagery = conn.getImagery(project_id=project.id)
+
+    imagery_id = None
+    for layer in imagery:
+        if layer.name == "pytest":
+            imagery_id = layer.id
+            break
+    
+    assert not imagery_id is None, "no test imagery found"
+
+    tileList = conn.getTileList(imagery_id, 13)
+
+    assert len(tileList) > 0, "No tiles found"
+
+    z,x,y = splitZXY(tileList[-1].zxy)
+    tile = conn.getTile(z, x, y, imagery_id)
     assert isinstance(tile, np.ndarray), "Failed to load tile"
     assert len(tile.shape) == 3, "bad size for tile"
 
@@ -96,9 +125,14 @@ def test_read_super_tile():
 
     pytest_layer = [layer for layer in imagery if layer.name == "pytest"][0]
     assert not pytest_layer is None, "no test imagery found"
+
+    ZXY = "10/262/380"
+    z,x,y = splitZXY(ZXY)
+    smallTile = conn.getTile(z,x,y,pytest_layer.id)
+    assert np.mean(smallTile) > 0, "Test tile not present"
     
     superTile = conn.getSuperTile(
-            zxy         = "10/262/380", 
+            zxy         = ZXY, 
             url         = pytest_layer.url,
             max_zoom    = pytest_layer.max_zoom)
 
@@ -127,4 +161,18 @@ def test_add_imagery():
     assert imagery_id in [layer.id for layer in imagery], "Failed to upload imagery"
     
    
+
+def test_get_imagery_url():
+    API_KEY = os.environ['PROJECT_KIWI_API_KEY']
+
+    conn = Connector(API_KEY, TEST_URL)
+
+    project = conn.getProjects()[0]
+
+    imagery = conn.getImagery(project_id=project.id)
+
+    for image in imagery:
+        assert image.url == conn.getImageryUrl(image.id, project.id), "Failed to get imagery url"
+
+    assert len(imagery) > 0, "No imagery, test invalid"
 
