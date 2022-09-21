@@ -143,6 +143,9 @@ def bboxFromCoords(coordinates: List[List], zxy: str, width: int, height: int, c
     """
 
     bbox = getBboxTileCoords(coordinates, zxy)
+    
+    [x1, y1, x2, y2] = bbox
+    
     if clip:
         x1 = np.clip(bbox[0], 0, 1)
         y1 = np.clip(bbox[1], 0, 1)
