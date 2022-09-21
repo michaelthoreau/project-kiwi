@@ -125,7 +125,7 @@ def getOverlap(coords: List[List], zxy: str):
 
     
 
-def bboxFromCoords(coordinates: List[List], zxy: str, width: int, height: int):
+def bboxFromCoords(coordinates: List[List], zxy: str, width: int, height: int, clip: bool = False):
     """ Get a bounding box from a polygon (lng, lat)
 
     Args:
@@ -133,6 +133,7 @@ def bboxFromCoords(coordinates: List[List], zxy: str, width: int, height: int):
         zxy (str): Tile zxy
         width (int): Width in pixels
         height (int): Height in pixels
+        clip (Optional[bool]): Clip the boxes to the edge of the tiles
 
     Returns:
         x1 (int): top-left x coordinate
@@ -142,10 +143,16 @@ def bboxFromCoords(coordinates: List[List], zxy: str, width: int, height: int):
     """
 
     bbox = getBboxTileCoords(coordinates, zxy)
-    x1 = np.clip(bbox[0], 0, 1)*width
-    y1 = np.clip(bbox[1], 0, 1)*height
-    x2 = np.clip(bbox[2], 0, 1)*width
-    y2 = np.clip(bbox[3], 0, 1)*height
+    if clip:
+        x1 = np.clip(bbox[0], 0, 1)
+        y1 = np.clip(bbox[1], 0, 1)
+        x2 = np.clip(bbox[2], 0, 1)
+        y2 = np.clip(bbox[3], 0, 1)
+
+    x1 *= width
+    y1 *= height
+    x2 *= width
+    y2 *= height
 
     return x1, y1, x2, y2
 
