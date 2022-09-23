@@ -11,9 +11,18 @@ def test_get_tasks():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    tasks = conn.getTasks(queue_id = 14)
+    tasks1 = conn.getTasks(queue_id = 14)
 
-    assert len(tasks) > 1, "Couldn't load tasks"
+    assert len(tasks1) > 1, "Couldn't load tasks"
+
+    tasks2 = conn.getTasks(queue_id = 14)
+
+    assert len(tasks2) > 1, "Couldn't load tasks"
+
+    # tasks should be random but repeatable for a user
+    assert tasks1 == tasks2, "Task ordering not correct"
+
+
 
 def test_get_task():
     API_KEY = os.environ['PROJECT_KIWI_API_KEY']
