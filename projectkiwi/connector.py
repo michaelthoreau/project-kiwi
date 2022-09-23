@@ -384,6 +384,50 @@ class Connector():
         assert len(tasks) == len(taskList), "Failed to parse tasks"
 
         return tasks
+    
+    def getTask(self, queue_id: int) -> List[Task]:
+        """Get a random task for a queue.
+
+        Args:
+            queue_id (int): The ID of the queue
+
+        Returns:
+            Task: task
+        """        
+       
+        route = "api/get_task"
+        params = {'key': self.key, "queue_id": queue_id}
+
+        r = requests.get(self.url + route, params=params)
+        r.raise_for_status()
+        data = r.json()
+        assert data['success'] == True, "Failed to get tasks"
+        
+        task = data['task']
+
+        return Task(**task)
+
+    def getNextTask(self, queue_id: int) -> List[Task]:
+        """Get a predictable next task for a queue.
+
+        Args:
+            queue_id (int): The ID of the queue
+
+        Returns:
+            Task: task
+        """        
+       
+        route = "api/get_next_task"
+        params = {'key': self.key, "queue_id": queue_id}
+
+        r = requests.get(self.url + route, params=params)
+        r.raise_for_status()
+        data = r.json()
+        assert data['success'] == True, "Failed to get tasks"
+        
+        task = data['task']
+
+        return Task(**task)
 
 
     def addAnnotation(self, annotation: Annotation, project: str) -> int:
