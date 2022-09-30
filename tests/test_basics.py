@@ -30,7 +30,7 @@ def test_get_imagery():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     imagery = conn.getImagery(project_id=project.id)
 
@@ -42,7 +42,8 @@ def test_get_tiles():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
+
 
     imagery = conn.getImagery(project_id=project.id)
 
@@ -64,7 +65,7 @@ def test_read_tile():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     imagery = conn.getImagery(project_id=project.id)
 
@@ -91,7 +92,7 @@ def test_get_tile():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     imagery = conn.getImagery(project_id=project.id)
 
@@ -119,7 +120,7 @@ def test_read_super_tile():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     imagery = conn.getImagery(project_id=project.id)
 
@@ -144,7 +145,7 @@ def test_add_imagery():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     before_imagery = conn.getImagery(project_id=project.id)
 
@@ -167,7 +168,7 @@ def test_get_imagery_url():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     imagery = conn.getImagery(project_id=project.id)
 

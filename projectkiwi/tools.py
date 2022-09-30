@@ -181,7 +181,47 @@ def bboxToCoco(x1: int, y1: int, x2: int, y2: int):
     
     return x1, y1, w, h
 
+def coordsFromBbox(
+        x1: int, 
+        y1: int, 
+        x2: int, 
+        y2: int, 
+        zxy: str, 
+        width: int, 
+        height: int) -> List[List[float]]:
+    """Get lng,lat coordinate list from a bounding box and width height
 
+    Args:
+        x1 (int): left edge
+        y1 (int): top edge
+        x2 (int): right edge
+        y2 (int): bottom edge
+        zxy (str): tile e.g. 12/345/678
+        width (int): tile width in pixels
+        height (int): tile height in pixels
+
+
+    Returns:
+        List[List[float]]: coordinate for polygon
+
+    """
+
+    z,x,y = splitZXY(zxy)
+    x1 /= width
+    y1 /= height
+    x2 /= width
+    y2 /= height
+    points = [[x+x1, y+y1],
+        [x+x2, y+y1],
+        [x+x2, y+y2],
+        [x+x1, y+y2],
+        [x+x1, y+y1]]
+    points_lat_lng = []
+    for point in points:
+        lat, lng = num2deg(point[0], point[1], z)
+        points_lat_lng.append([lng, lat])
+    return points_lat_lng
+    
 
 def splitZXY(zxy: str):
     """ Split an zxy string up in to z,x,y component

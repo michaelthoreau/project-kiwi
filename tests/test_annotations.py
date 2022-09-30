@@ -2,7 +2,7 @@ import sys,os
 sys.path.insert(0, os.getcwd())
 from projectkiwi.connector import Connector
 from projectkiwi.models import  Annotation
-from projectkiwi.tools import getBboxTileCoords
+from projectkiwi.tools import getBboxTileCoords, coordsFromBbox
 import numpy as np
 
 from test_basics import TEST_URL
@@ -23,7 +23,7 @@ def test_read_annotations():
 
     conn = Connector(API_KEY, TEST_URL)
     
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     annotations = conn.getAnnotations(project_id=project.id)
 
@@ -35,7 +35,7 @@ def test_annotations_in_tile():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     allAnnotations = conn.getAnnotations(project_id=project.id)
 
@@ -52,7 +52,7 @@ def test_get_bboxes_for_tile():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     allAnnotations = conn.getAnnotations(project_id=project.id)
 
@@ -74,7 +74,7 @@ def test_read_predictions():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
     prediction = Annotation(
         shape="Polygon",
         label_id=374,
@@ -103,7 +103,7 @@ def test_dict_conversion():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     annotation = conn.getAnnotations(project_id=project.id)[0]
 
@@ -118,7 +118,7 @@ def test_add_annotation():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     annotation = Annotation(
         shape="Polygon",
@@ -141,7 +141,7 @@ def test_add_prediction():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     prediction = Annotation(
         shape="Polygon",
@@ -167,7 +167,7 @@ def test_remove_all_predictions():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    project = conn.getProjects()[0]
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
 
     conn.removeAllPredictions(project.id)
     
@@ -202,3 +202,62 @@ def test_remove_all_predictions():
     
 
 
+def test_add_bbox_prediction():
+    API_KEY = os.environ['PROJECT_KIWI_API_KEY']
+
+    conn = Connector(API_KEY, TEST_URL)
+
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
+
+    tile_zxy = "14/4202/6087"
+
+    predictions = [annotation for annotation in conn.getAnnotations(project_id=project.id) \
+        if annotation.confidence != None]
+
+    predictionsInTile = conn.getAnnotationsForTile(
+            annotations=predictions,
+            zxy = tile_zxy,
+            overlap_threshold=0.2)
+    
+    prediction = Annotation(
+        shape="Polygon",
+        label_id=374,
+        imagery_id="93650ec6508a",
+        coordinates=coordsFromBbox(100, 100, 200, 200, tile_zxy, 256, 256),
+        confidence = 0.66
+    )
+
+    annotation_id = conn.addPrediction(prediction, project.id)
+    assert annotation_id, "Failed to add prediction"
+
+    predictions = [annotation for annotation in conn.getAnnotations(project_id=project.id) \
+        if annotation.confidence != None]
+
+    predictionsInTile2 = conn.getAnnotationsForTile(
+            annotations=predictions,
+            zxy = tile_zxy,
+            overlap_threshold=0.2)
+    
+    assert len(predictionsInTile2) == len(predictionsInTile) + 1, "Failed to add prediction"
+
+
+def test_get_bboxes_for_tile():
+    API_KEY = os.environ['PROJECT_KIWI_API_KEY']
+
+    conn = Connector(API_KEY, TEST_URL)
+
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
+
+    allAnnotations = conn.getAnnotations(project_id=project.id)
+
+    tile_zxy = "12/1051/1522"
+    annotations = conn.getAnnotationsForTile(
+            annotations=allAnnotations,
+            zxy = tile_zxy,
+            overlap_threshold=0.2)
+
+    assert len(annotations) > 0, "No annotations found for tile"
+
+    for annotation in annotations:
+        bbox = getBboxTileCoords(annotation.coordinates, tile_zxy)
+        assert len(bbox) == 4, "malformed bounding box"
