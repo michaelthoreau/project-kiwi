@@ -55,7 +55,7 @@ def test_get_tiles():
     
     assert not imagery_id is None, "no test imagery found"
 
-    tiles = conn.getTileList(imagery_id, 13)
+    tiles = conn.getTileList(imagery_id, project.id, 13)
 
     assert len(tiles) > 0, "No tiles found"
 
@@ -77,7 +77,7 @@ def test_read_tile():
     
     assert not imagery_id is None, "no test imagery found"
 
-    tileList = conn.getTileList(imagery_id, 13)
+    tileList = conn.getTileList(imagery_id, project.id, 13)
 
     assert len(tileList) > 0, "No tiles found"
 
@@ -104,7 +104,7 @@ def test_get_tile():
     
     assert not imagery_id is None, "no test imagery found"
 
-    tileList = conn.getTileList(imagery_id, 13)
+    tileList = conn.getTileList(imagery_id, project.id, 13)
 
     assert len(tileList) > 0, "No tiles found"
 

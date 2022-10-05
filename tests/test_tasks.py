@@ -5,17 +5,18 @@ from projectkiwi.models import Task
 
 from test_basics import TEST_URL
 
+QUEUE_ID = 23
 
 def test_get_tasks():
     API_KEY = os.environ['PROJECT_KIWI_API_KEY']
 
     conn = Connector(API_KEY, TEST_URL)
 
-    tasks1 = conn.getTasks(queue_id = 14)
+    tasks1 = conn.getTasks(queue_id = QUEUE_ID)
 
     assert len(tasks1) > 1, "Couldn't load tasks"
 
-    tasks2 = conn.getTasks(queue_id = 14)
+    tasks2 = conn.getTasks(queue_id = QUEUE_ID)
 
     assert len(tasks2) > 1, "Couldn't load tasks"
 
@@ -29,7 +30,7 @@ def test_get_task():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    task = conn.getTask(queue_id = 14)
+    task = conn.getTask(queue_id = QUEUE_ID)
 
     assert isinstance(task, Task), "Couldn't load task"
 
@@ -40,10 +41,10 @@ def test_get_next_task():
 
     conn = Connector(API_KEY, TEST_URL)
 
-    task = conn.getNextTask(queue_id = 14)
+    task = conn.getNextTask(queue_id = QUEUE_ID)
 
     assert isinstance(task, Task), "Couldn't load task"
 
-    task2 = conn.getNextTask(queue_id = 14)
+    task2 = conn.getNextTask(queue_id = QUEUE_ID)
 
     assert task.zxy == task2.zxy, "Repeated calls to get_next_task should give the same task"

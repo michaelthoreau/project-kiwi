@@ -38,7 +38,7 @@ class Connector():
         route = "api/get_imagery"
         params = {
             'key': self.key, 
-            'project': project_id
+            'project_id': project_id
         }
 
         r = requests.get(self.url + route, params=params)
@@ -91,6 +91,7 @@ class Connector():
 
     def getTileList(self, 
             imagery_id: str, 
+            project_id: str,
             zoom: int) -> List[TilePath]:
         """Get a list of tiles for a given imagery id
 
@@ -105,6 +106,7 @@ class Connector():
         params = {
             'key': self.key, 
             'imagery_id': imagery_id, 
+            'project_id': project_id,
             'zoom': zoom}
 
         r = requests.get(self.url + route, params=params)
@@ -296,7 +298,7 @@ class Connector():
         route = "api/get_annotations"
         params = {
             'key': self.key,
-            'project': project_id
+            'project_id': project_id
         }
 
         r = requests.get(self.url + route, params=params)
@@ -444,7 +446,7 @@ class Connector():
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
         annoDict = dict(annotation)
-        annoDict['project'] = project
+        annoDict['project_id'] = project
         annoDict['key'] = self.key
         r = requests.post(self.url + route, data=json.dumps(annoDict), headers=headers)
         r.raise_for_status()
@@ -468,7 +470,7 @@ class Connector():
         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
         annoDict = dict(annotation)
-        annoDict['project'] = project
+        annoDict['project_id'] = project
         annoDict['key'] = self.key
         r = requests.post(self.url + route, data=json.dumps(annoDict), headers=headers)
         r.raise_for_status()
@@ -497,7 +499,7 @@ class Connector():
         """    
 
         route = "api/remove_all_predictions" 
-        params = {'key': self.key, 'project': project_id}
+        params = {'key': self.key, 'project_id': project_id}
 
         r = requests.delete(self.url + route, 
                 headers={'Content-Type': 'application/json'},
