@@ -250,7 +250,7 @@ def splitZXY(zxy: str):
     return z, x, y
 
 
-def urlFromZxy(z: int, x: int, y: int, imagery_id: str, baseUrl: str, key: str) -> str:
+def urlFromZxy(z: int, x: int, y: int, imagery_id: str, baseUrl: str) -> str:
     """Generate a url given a zxy and an imagery id
 
     Args:
@@ -259,9 +259,8 @@ def urlFromZxy(z: int, x: int, y: int, imagery_id: str, baseUrl: str, key: str) 
         y (int): y tile
         imagery_id (str): id of the imagery
         baseUrl (str): base url e.g. https://project-kiwi.org/
-        key (str): api key
 
     Returns:
-        str: url to download the tile
+        str: url to download the tile, however api key is still required as a param
     """    
-    return f"{baseUrl}/api/get_tile/{imagery_id}/{z}/{x}/{y}?key={key}"
+    return f"{baseUrl}/api/get_tile/{imagery_id}/{z}/{x}/{y}"

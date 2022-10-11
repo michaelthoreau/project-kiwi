@@ -3,16 +3,16 @@
 Below are a few examples of some basic usage to get started with the API.
 ### Installation
 ```Bash
-pip install projectkiwi -y
+pip install projectkiwi
 ```
 ---
 
 ### Getting Started
-Register and get your api key from [https://project-kiwi.org/account/](https://project-kiwi.org/account/)
+Register and get your api key from [https://project-kiwi.org/](https://project-kiwi.org/)
 ```python
 from projectkiwi.connector import Connector
 
-conn = Connector(key="****key****", url="https://sandbox.project-kiwi.org/api/")
+conn = Connector(key="****key****")
 
 imagery = conn.getImagery()
 print(imagery)
@@ -55,7 +55,8 @@ print("top5: ", tiles[:5])
 import matplotlib.pyplot as plt
 
 tile = conn.getTileList("2bdf45d8b8da", 13)[0]
-img = conn.getTile(tile['url'])
+z,x,y = projectkiwi.tools.splitZXY(tile['zxy'])
+img = conn.getTile("2bdf45d8b8da", z, x, y)
 plt.imshow(img[:,:,0], cmap="gray")
 plt.title(tile['zxy'])
 ```

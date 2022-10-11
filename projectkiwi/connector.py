@@ -1,10 +1,11 @@
+from re import L
 import requests
 import json
 import numpy as np
 from PIL import Image
 import io
 from typing import List
-from projectkiwi.tools import getOverlap, splitZXY, urlFromZxy
+from projectkiwi.tools import getOverlap, num2deg, splitZXY, urlFromZxy
 from projectkiwi.models import Annotation, Project, ImageryLayer, TilePath, Task
 import threading
 import queue
@@ -51,41 +52,44 @@ class Connector():
         return imagery
 
 
-    def readTile(self, url) -> np.ndarray:
-        """Get a tile in numpy array form
-
-        Args:
-            url (str): url of the tile
-
-        Returns:
-            np.array: numpy array containing the tile
-        """
-        r = requests.get(url)
-        r.raise_for_status()
-        tileContent = r.content
-        return np.asarray(Image.open(io.BytesIO(tileContent)))
     
-    def getTile(self, 
+    def getTile(self,
+            imagery_id: str,
             z: int,
             x: int,
             y: int,
-            imagery_id: str
+            tile_size: int = 256,
+            tile_buffer: int = 0
         ) -> np.ndarray:
         """Download a tile given the z,x,y and id
 
         Args:
+            imagery_id (str): id of the imagery
             z (int): zoom
             x (int): x tile
             y (int): y tile
-            imagery_id (str): id of the imagery
+            tile_size (int): width or height of the square tile
+            tile_buffer (int): number of pixels to read each side of the tile
+
 
         Returns:
             np.ndarray: numpy array of tile
-        """        
+        """
 
-        url = urlFromZxy(z, x, y, imagery_id, self.url, self.key)
+        url = urlFromZxy(z, x, y, imagery_id, self.url)
+
+        params={
+            'key': self.key,
+            'tile_size': tile_size,
+            'tile_buffer': tile_buffer
+        }
+
+        r = requests.get(url, params=params)
+        r.raise_for_status()
+        tileContent = r.content
+        return np.asarray(Image.open(io.BytesIO(tileContent)))
         
-        return self.readTile(url)
+
 
 
 
@@ -193,97 +197,32 @@ class Connector():
             r.raise_for_status()
 
         return jsonResponse['imagery_id']
-    
 
-    def getSuperTile(self, 
-            zxy: str,
-            url: str,
-            max_zoom: int = 22,
-            num_threads: int = 4
-    ) -> np.ndarray:
-        """Get a tile of imagery with resolution dictated by the choice of zoom
+    def getSuperTile(self,
+                imagery_id: str,
+                zxy: str,
+                max_zoom: int = 22,
+                padding: int = 0
+        ) -> np.ndarray:
+        """Get a tile as higher resolution, as specified by the max zoom.
 
         Args:
-            zxy (str): zxy for tile e.g. 12/345/678
-            url (str): url template e.g. https://tile.openstreetmap.org/${z}/${x}/${y}.png
-            max_zoom (int, optional): full resolution tiles to use. Defaults to 22.
-            num_threads (int, optional): number of threads for downloading. Defaults to 4.
-
-        Raises:
-            RuntimeError: raised if no tiles available.
+            imagery_id (str): The ID of the imagery
+            zxy (str): zxy string to specify the tile e.g. 12/345/678
+            max_zoom (int, optional): Maximum zoom. Defaults to 22.
+            padding (int, optional): Number of pixels to read on each side of the tile. Defaults to 0.
 
         Returns:
-            np.ndarray: the tile, e.g. [1024,1024,3]
-        """    
-        
-        q1 = queue.Queue()
-        q2 = queue.Queue()
-
-        def worker(q1, q2):
-            while True:
-                try:
-                    i, j, url = q1.get(timeout=10)
-                    tile = self.readTile(url)
-                    q2.put((i,j,tile))
-                    q1.task_done()
-                except queue.Empty as e:
-                    return
-                except Exception as e:
-                    q2.put((i,j,None))
-                    q1.task_done()
-
+            np.ndarray: Image data for the tile.
+        """            
 
         z,x,y = splitZXY(zxy)
         tile_width = 2**(max_zoom - z)
         width = 256*tile_width
-        assert width < 10000, "Resultant image would be too large (100MP limit), try reducing max zoom or increasing super tile zoom"
-        height = width
-        channels = 4  # assume 4 channels to begin with
 
-        returnImg = np.zeros((width, height, channels))
-        
-        for i in range(tile_width):
-            for j in range(tile_width):
-                z_prime = max_zoom
-                x_prime = x*tile_width + i
-                y_prime = (y+1)*tile_width - (j+1)
+        return self.getTile(imagery_id, z, x, y, tile_size=width, tile_buffer=padding)
 
-                imgUrl = url
-                imgUrl = imgUrl.replace("{s}.", "")
-                imgUrl = imgUrl.replace("{z}", str(z_prime))
-                imgUrl = imgUrl.replace("{x}", str(x_prime))
-                imgUrl = imgUrl.replace("{y}", str(y_prime))
-                imgUrl = imgUrl.replace("{key}", self.key)
 
-                q1.put((i, j, imgUrl))
-        
-        for _ in range(num_threads):
-            threading.Thread(target=worker, args=(q1, q2)).start()
-        q1.join()
-        
-        success, fails = 0, 0
-        numTiles = (tile_width*tile_width)
-        for _ in range(numTiles):
-            i, j, tile = q2.get(timeout=1)
-            if tile is not None:
-                channels = tile.shape[-1]
-                returnImg[(tile_width - (j+1))*256:(tile_width - j)*256, i*256:(i+1)*256, 0:channels] = tile
-                success += 1
-            else:
-                returnImg[(tile_width - (j+1))*256:(tile_width - j)*256, i*256:(i+1)*256 :] = np.zeros((256, 256, 4))
-                fails += 1
-
-        if fails == numTiles:
-            raise RuntimeError("No valid tiles loaded here")
-
-        # always return uint8
-        returnImg = returnImg.astype(np.uint8)
-
-        # if type is RGBA, remove alpha
-        if channels <= 3:
-            return returnImg[:,:,0:channels]
-        elif channels > 3:
-            return returnImg[:,:,:3]
 
     
     def getAnnotations(self, project_id: str) -> List[Annotation]:
