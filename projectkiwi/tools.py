@@ -1,6 +1,7 @@
 import math
 from typing import List, Union
 import numpy as np
+from warnings import warn
 
 def deg2num(lat_deg: float, lon_deg:  float, zoom: int):
     """Convert lat,lng to xyz tile coordinates.
@@ -125,14 +126,13 @@ def getOverlap(coords: List[List], zxy: str):
 
     
 
-def bboxFromCoords(coordinates: List[List], zxy: str, width: int, height: int, clip: bool = False):
+def bboxFromCoords(coordinates: List[List], zxy: str, tile_size: int, clip: bool = False):
     """ Get a bounding box from a polygon (lng, lat)
 
     Args:
         coordinates (List[List]): List of points in polygon (lng, lat)
         zxy (str): Tile zxy
-        width (int): Width in pixels
-        height (int): Height in pixels
+        tile_size (int): size of tile, e.g. 256
         clip (Optional[bool]): Clip the boxes to the edge of the tiles
 
     Returns:
@@ -152,10 +152,10 @@ def bboxFromCoords(coordinates: List[List], zxy: str, width: int, height: int, c
         x2 = np.clip(bbox[2], 0, 1)
         y2 = np.clip(bbox[3], 0, 1)
 
-    x1 *= width
-    y1 *= height
-    x2 *= width
-    y2 *= height
+    x1 *= tile_size
+    y1 *= tile_size
+    x2 *= tile_size
+    y2 *= tile_size
 
     return x1, y1, x2, y2
 
@@ -180,6 +180,74 @@ def bboxToCoco(x1: int, y1: int, x2: int, y2: int):
     h = int(y2-y1)
     
     return x1, y1, w, h
+
+
+
+def yx_to_xy(yx: List[List]) -> List[List]:
+    """" switch the ordering in our array, explicitely so we dont forget
+
+    Args:
+        yx (List[List]): [[y,x], [y,x]]
+
+    Returns:
+        List[List]: [[x,y], [x,y]]
+    """
+    return [[x,y] for y,x in yx]
+
+def bboxToPolygon(x1, y1, x2, y2):
+    """ Get a 4 point polygon from a bounding box.
+
+    Args:
+        x1 (float): left edge
+        y1 (float): top edge
+        x2 (float): right edge
+        y2 (float): bottom edge
+
+    Returns:
+        List[List[float]]: polygon
+    """
+    return [[x1, y1], [x2, y1], [x2, y2], [x1, y2], [x1, y1]]
+
+def coordsFromPolygon(
+        polygon: List[List[float]],
+        zxy: str, 
+        tile_size: int,
+        padding: int = 0) -> List[List[float]]:
+    """ get a lat/lng polygon from a polygon in a tile
+
+    Args:
+        polygon (List[List[float]]): coordinates in the image [[y,x],[y,x]]
+        zxy (str): zxy string for the tile e.g. 12/34/567
+        width (int): width of the tile
+        height (int): height of the tile
+        padding (int, optional): number of extra pixels around the edge of the tile. Defaults to 0.
+
+    Returns:
+        List[List[float]]: coordinates in [[lng,lat],[lng,lat]] format
+    """
+
+
+    z,x,y = splitZXY(zxy)
+
+    points_lat_lng = []
+    for (x1,y1) in polygon:
+
+      x1 -= padding
+      y1 -= padding
+
+      # Normalise
+      x1 /= tile_size
+      y1 /= tile_size
+
+      # add task corner x,y
+      x1 += x
+      y1 += y
+
+      # convert to lat,lng
+      lat, lng = num2deg(x1, y1, z)
+      points_lat_lng.append([lng, lat])
+
+    return points_lat_lng
 
 def coordsFromBbox(
         x1: int, 
@@ -206,6 +274,9 @@ def coordsFromBbox(
 
     """
 
+    warn('This function is deprecated, consider a combination of bboxToPolygon and coordsFromPolygon', DeprecationWarning, stacklevel=2)
+
+
     z,x,y = splitZXY(zxy)
     x1 /= width
     y1 /= height
@@ -221,7 +292,35 @@ def coordsFromBbox(
         lat, lng = num2deg(point[0], point[1], z)
         points_lat_lng.append([lng, lat])
     return points_lat_lng
-    
+
+
+def latLngToImgCoords(coords: List[List], zxy: str, tile_size: int) -> List[List]:
+    """ convert a list of coordinates to pixel coordinates in a tile
+
+    Args:
+        coords (List[List]): coordinates e.g. [[lng,lat], [lng, lat]]
+        zxy (str): tile zxy string e.g. 12/34/567
+        tile_size (int): width of the tile e.g. 256 - dont forget padding
+
+    Returns:
+        List[List]: _description_
+    """
+
+    tile_z, tile_x, tile_y = splitZXY(zxy)
+
+    coords_tile = []
+    # get annotation bounding box in tile coordinates
+    for (x, y) in coords:
+      x_prime, y_prime = deg2num(y, x, tile_z)
+      coords_tile.append([x_prime - tile_x, y_prime - tile_y])
+
+    coords_img = []
+    for (x,y) in coords_tile:
+      coords_img.append((int(x*tile_size), int(y*tile_size)))
+
+    return coords_img
+
+  
 
 def splitZXY(zxy: str):
     """ Split an zxy string up in to z,x,y component
