@@ -2,6 +2,9 @@ import math
 from typing import List, Union
 import numpy as np
 from warnings import warn
+from . import models
+from PIL import Image, ImageDraw
+from shapely.geometry import Polygon
 
 def deg2num(lat_deg: float, lon_deg:  float, zoom: int):
     """Convert lat,lng to xyz tile coordinates.
@@ -121,10 +124,40 @@ def getOverlap(coords: List[List], zxy: str):
 
     # get annotation area
     annotation_area = abs((x2-x1)*(y2-y1))
-    overlap_area = (x_overlap*y_overlap) / annotation_area
-    return overlap_area
-
     
+    if annotation_area == 0:
+        return 0
+
+    return (x_overlap*y_overlap) / annotation_area
+
+
+def getAnnotationsForTile(
+            annotations: List[models.Annotation],
+            zxy: str,
+            overlap_threshold: float = 0.2
+        ) -> List[models.Annotation]:
+        """ Filter a set of annotations for those that have overlap with some tile
+
+        Args:
+            annotations (List[Annotation]): Annotations to filter
+            zxy (str): The tile e.g. 12/345/678
+            overlap_threshold (float, optional): How much overlap. Defaults to 0.2.
+
+        Returns:
+            List[Annotation]: All the annotations that have enough overlap with the specified tile
+        """        
+
+        annotationsInTile = []
+
+        # filter annotations
+        for annotation in annotations:
+            # check overlap with tile
+            overlap = getOverlap(annotation.coordinates, zxy)
+            if overlap < overlap_threshold:
+                continue
+            annotationsInTile.append(annotation)
+
+        return annotationsInTile
 
 def bboxFromCoords(coordinates: List[List], zxy: str, tile_size: int, clip: bool = False):
     """ Get a bounding box from a polygon (lng, lat)
@@ -363,3 +396,64 @@ def urlFromZxy(z: int, x: int, y: int, imagery_id: str, baseUrl: str) -> str:
         str: url to download the tile, however api key is still required as a param
     """    
     return f"{baseUrl}/api/get_tile/{imagery_id}/{z}/{x}/{y}"
+
+
+def maskFromPolygon(polygon: List[List], width: int, height: int) -> np.ndarray:
+    """generates a binary mask from a polygon in image coordinates
+
+    Args:
+        polygon (List[List]): list of points in the polygon, image coordinates
+        width (int): width of the output mask
+        height (int): height of the output mask
+
+    Returns:
+        np.ndarray: the binary image
+    """    
+    im = Image.new('L', (width, height), 0)
+    ImageDraw.Draw(im).polygon(polygon, outline=1, fill=1)
+    mask = np.array(im)
+    return mask
+
+
+def bbox_iou(box1: List, box2: List) -> float:
+    """calculate the intersection over union of two bounding boxes
+
+    Args:
+        box1 (List): first box
+        box2 (List): second box
+
+    Returns:
+        float: the iou
+    """    
+    return iou(    [
+                    [box1[0], box1[1]], 
+                    [box1[2], box1[1]], 
+                    [box1[2], box1[3]], 
+                    [box1[0], box1[3]]
+                    ],
+                   [
+                    [box2[0], box2[1]], 
+                    [box2[2], box2[1]], 
+                    [box2[2], box2[3]], 
+                    [box2[0], box2[3]]
+                    ])
+
+
+def iou(poly1: List[List], poly2: List[List]) -> float:
+    """ calculate the iou of each polygon
+
+    Args:
+        poly1 (List[List]): list of points in the first polygon e.g. [[x,y], [x,y]]
+        poly2 (List[List]): list of points in the second polygon e.g. [[x,y], [x,y]]
+
+    Returns:
+        float: iou between the polygons.
+    """
+    
+    poly1 = Polygon(poly1)
+    poly2 = Polygon(poly2)
+    intersection = poly1.intersection(poly2).area
+    if intersection == 0:
+      return 0
+    union = poly1.union(poly2).area
+    return intersection / union

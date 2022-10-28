@@ -270,35 +270,6 @@ class Connector():
 
 
 
-    def getAnnotationsForTile(
-            self,
-            annotations: List[Annotation],
-            zxy: str,
-            overlap_threshold: float = 0.2
-        ) -> List[Annotation]:
-        """ Filter a set of annotations for those that have overlap with some tile
-
-        Args:
-            annotations (List[Annotation]): Annotations to filter
-            zxy (str): The tile e.g. 12/345/678
-            overlap_threshold (float, optional): How much overlap. Defaults to 0.2.
-
-        Returns:
-            List[Annotation]: All the annotations that have enough overlap with the specified tile
-        """        
-
-        annotationsInTile = []
-
-        # filter annotations
-        for annotation in annotations:
-            # check overlap with tile
-            overlap = getOverlap(annotation.coordinates, zxy)
-            if overlap < overlap_threshold:
-                continue
-            annotationsInTile.append(annotation)
-
-        return annotationsInTile
-
     def getTasks(self, queue_id: int) -> List[Task]:
         """Get a list of tasks in a queue.
 
