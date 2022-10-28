@@ -5,7 +5,7 @@ from projectkiwi.models import Task
 
 from test_basics import TEST_URL
 
-QUEUE_ID = 23
+QUEUE_ID = 27
 
 def test_get_tasks():
     API_KEY = os.environ['PROJECT_KIWI_API_KEY']

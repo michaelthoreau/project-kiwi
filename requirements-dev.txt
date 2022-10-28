@@ -2,4 +2,8 @@ numpy
 pillow
 pydantic
 requests
+shapely
+torch
+torchvision
+scikit-image
 myst-parser

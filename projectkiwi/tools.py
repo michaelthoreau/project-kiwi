@@ -116,7 +116,7 @@ def getOverlap(coords: List[List], zxy: str):
     Returns:
         float: overlap [0,1]
     """
-    x1, x2, y1, y2 = getBboxTileCoords(coords, zxy)
+    x1, y1, x2, y2 = getBboxTileCoords(coords, zxy)
 
     # get intersection area
     x_overlap = np.clip(x2, 0, 1) - np.clip(x1, 0, 1)

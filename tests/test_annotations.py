@@ -2,7 +2,7 @@ import sys,os
 sys.path.insert(0, os.getcwd())
 from projectkiwi.connector import Connector
 from projectkiwi.models import  Annotation
-from projectkiwi.tools import getBboxTileCoords, coordsFromBbox
+from projectkiwi.tools import getBboxTileCoords, getAnnotationsForTile, coordsFromPolygon, bboxToPolygon
 import numpy as np
 
 from test_basics import TEST_URL
@@ -39,7 +39,7 @@ def test_annotations_in_tile():
 
     allAnnotations = conn.getAnnotations(project_id=project.id)
 
-    annotations = conn.getAnnotationsForTile(
+    annotations = getAnnotationsForTile(
             annotations=allAnnotations,
             zxy = "12/1051/1522",
             overlap_threshold=0.2)
@@ -57,7 +57,7 @@ def test_get_bboxes_for_tile():
     allAnnotations = conn.getAnnotations(project_id=project.id)
 
     tile_zxy = "12/1051/1522"
-    annotations = conn.getAnnotationsForTile(
+    annotations = getAnnotationsForTile(
             annotations=allAnnotations,
             zxy = tile_zxy,
             overlap_threshold=0.2)
@@ -214,16 +214,18 @@ def test_add_bbox_prediction():
     predictions = [annotation for annotation in conn.getAnnotations(project_id=project.id) \
         if annotation.confidence != None]
 
-    predictionsInTile = conn.getAnnotationsForTile(
+    predictionsInTile = getAnnotationsForTile(
             annotations=predictions,
             zxy = tile_zxy,
             overlap_threshold=0.2)
     
+    latLngPoly = coordsFromPolygon(bboxToPolygon(100, 100, 200, 200), tile_zxy, 256)
+
     prediction = Annotation(
         shape="Polygon",
         label_id=374,
         imagery_id="93650ec6508a",
-        coordinates=coordsFromBbox(100, 100, 200, 200, tile_zxy, 256, 256),
+        coordinates=latLngPoly,
         confidence = 0.66
     )
 
@@ -233,7 +235,7 @@ def test_add_bbox_prediction():
     predictions = [annotation for annotation in conn.getAnnotations(project_id=project.id) \
         if annotation.confidence != None]
 
-    predictionsInTile2 = conn.getAnnotationsForTile(
+    predictionsInTile2 = getAnnotationsForTile(
             annotations=predictions,
             zxy = tile_zxy,
             overlap_threshold=0.2)
@@ -251,7 +253,7 @@ def test_get_bboxes_for_tile():
     allAnnotations = conn.getAnnotations(project_id=project.id)
 
     tile_zxy = "12/1051/1522"
-    annotations = conn.getAnnotationsForTile(
+    annotations = getAnnotationsForTile(
             annotations=allAnnotations,
             zxy = tile_zxy,
             overlap_threshold=0.2)

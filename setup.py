@@ -2,7 +2,7 @@ from setuptools import setup
 from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
-VERSION = '0.4.10'
+VERSION = '0.5.0'
 
 setup(
   name = 'projectkiwi',
@@ -22,6 +22,10 @@ setup(
     'pillow',
     'pydantic',
     'requests',
+    'shapely',
+    'torch',
+    'torchvision',
+    'scikit-image'
   ],
   classifiers=[
         "Programming Language :: Python :: 3",
