@@ -41,7 +41,7 @@ class BaseDetector(object):
     def get_model():
         raise NotImplementedError("Please use a child class of this one")
     
-    def __init__(self, conn, project_id, imagery_id, max_zoom, tile_padding, cache_location, batch_size = 4, model_load_path = None):
+    def __init__(self, conn, project_id, imagery_id, max_zoom, tile_padding, cache_location, batch_size = 4, model_load_path = None, device = None):
 
         self.conn = conn
         self.project_id = project_id
@@ -51,7 +51,10 @@ class BaseDetector(object):
         self.model = None
         self.cache_location = Path(cache_location)
         self.batch_size = batch_size
-
+        
+        if device != None:
+            self.device = torch.device(device)
+        
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         print(f"Using device: {self.device}")
 
@@ -62,13 +65,14 @@ class BaseDetector(object):
             self.model_save_path = Path(self.cache_location / f"{self.project_id}_{self.model_name}.kiwi")
         else:
             self.model_save_path = model_load_path
-            if Path(self.model_save_path).exists():
-                state = torch.load(self.model_save_path)
-                print(f"Loading model from: {self.model_save_path}")
-                self.model = self.get_model(state['num_classes'])
-                self.model.load_state_dict(state['state_dict'])
-            else:
-                print(f"No model found at: {self.model_save_path}")
+        
+        if Path(self.model_save_path).exists():
+            state = torch.load(self.model_save_path)
+            print(f"Loading model from: {self.model_save_path}")
+            self.model = self.get_model(state['num_classes'])
+            self.model.load_state_dict(state['state_dict'])
+        else:
+            print(f"No model found at: {self.model_save_path}")
 
 
 
@@ -180,7 +184,7 @@ class BaseDetector(object):
         return self.model_save_path
 
     
-    def predict(self, tasks, remove_preds: bool = True):
+    def predict(self, tasks, remove_preds: bool = True, check_labels: bool = True):
 
         dataset = ProjectKiwiDataSet(self.conn, tasks, self.project_id, self.imagery_id, self.max_zoom, self.cache_location, self.tile_padding, inference=True, make_masks=False)
         data_loader_inference = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=4, collate_fn=self.collate_fn)

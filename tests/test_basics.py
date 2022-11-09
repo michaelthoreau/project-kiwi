@@ -184,3 +184,14 @@ def test_get_imagery_url():
 
     assert len(imagery) > 0, "No imagery, test invalid"
 
+
+def test_read_labels():
+    API_KEY = os.environ['PROJECT_KIWI_API_KEY']
+
+    conn = Connector(API_KEY, TEST_URL)
+
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
+
+    annotations = conn.Labels(project_id=project.id)
+
+    assert len(annotations) >= 1, "Missing Annotations"

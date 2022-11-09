@@ -86,3 +86,11 @@ class Task(BaseModel):
     submitter_login: Optional[str]
     zxy: str
 
+
+class Label(BaseModel):
+    id: Optional[int]
+    project_id: int
+    color: str
+    name: str
+    status: str
+

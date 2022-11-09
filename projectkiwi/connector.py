@@ -6,7 +6,7 @@ from PIL import Image
 import io
 from typing import List
 from projectkiwi.tools import getOverlap, num2deg, splitZXY, urlFromZxy
-from projectkiwi.models import Annotation, Project, ImageryLayer, TilePath, Task
+from projectkiwi.models import Annotation, Project, ImageryLayer, TilePath, Task, Label
 import threading
 import queue
 
@@ -415,3 +415,33 @@ class Connector():
                 headers={'Content-Type': 'application/json'},
                 data=json.dumps(params))
         r.raise_for_status()
+
+    def getLabels(self, project_id: str) -> List[Label]:
+        """Get all labels in a project
+        Args:
+            project_id (str): id for the project to get the labels for
+
+        Returns:
+            List[Label]: labels
+        """
+
+        route = "api/get_labels"
+        params = {
+            'key': self.key,
+            'project_id': project_id
+        }
+
+        r = requests.get(self.url + route, params=params)
+        r.raise_for_status()
+
+        try:
+            labels = []
+            labelsJSON = r.json()
+            for label in labelsJSON:
+                labels.append(Label(**label))
+            assert len(labelsJSON) == len(labels), "ERROR: could not parse labels"
+            return labels
+
+        except Exception as e:
+            print("Error: Could not load labels")
+            raise e
