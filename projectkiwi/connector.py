@@ -445,3 +445,38 @@ class Connector():
         except Exception as e:
             print("Error: Could not load labels")
             raise e
+    
+
+
+    def addLabel(self, name: str, project_id: str, color: str = None) -> Label:
+        """ add a label to the project
+
+        Args:
+            name (str): name of the label e.g. object class
+            project_id (str): id of the project that the label will belong to
+            color (str, optional): Color string for the label e.g. rgb(255, 0, 100), will be selected randomly if not supplied. Defaults to None.
+
+        Returns:
+            Label: the label including it's id
+        """        
+
+        if color is None:
+            rgb = list(np.random.choice(range(256), size=3))
+            color = f"rgb({rgb[0]}, {rgb[1]}, {rgb[2]})"
+
+
+        labelDict = {}
+        labelDict['key'] = self.key
+        labelDict['project_id'] = project_id
+        labelDict['name'] = name
+        labelDict['status'] = 'active'
+        labelDict['color'] = color
+
+        route = "api/add_label"
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+
+
+        r = requests.post(self.url + route, data=json.dumps(labelDict), headers=headers)
+        r.raise_for_status()
+        jsonResponse = r.json()
+        return Label(**jsonResponse)

@@ -192,6 +192,23 @@ def test_read_labels():
 
     project = [project for project in conn.getProjects() if project.name == "default"][0]
 
-    annotations = conn.Labels(project_id=project.id)
+    labels = conn.getLabels(project_id=project.id)
 
-    assert len(annotations) >= 1, "Missing Annotations"
+    assert len(labels) >= 1, "Missing Labels"
+
+def test_add_label():
+    API_KEY = os.environ['PROJECT_KIWI_API_KEY']
+
+    conn = Connector(API_KEY, TEST_URL)
+
+    project = [project for project in conn.getProjects() if project.name == "default"][0]
+
+    label = conn.addLabel("labelName", project.id)
+    assert label.name == "labelName", "Could not create label"
+    assert label.id is not None, "Could not create label"
+
+
+    label = conn.addLabel("labelName", project.id, color="rgb(0, 100, 200)")
+    assert label.name == "labelName", "Could not create label"
+    assert label.id is not None, "Could not create label"
+    assert label.color == "rgb(0, 100, 200)", "Wrong color"

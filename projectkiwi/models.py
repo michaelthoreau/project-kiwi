@@ -89,7 +89,7 @@ class Task(BaseModel):
 
 class Label(BaseModel):
     id: Optional[int]
-    project_id: int
+    project_id: str
     color: str
     name: str
     status: str
