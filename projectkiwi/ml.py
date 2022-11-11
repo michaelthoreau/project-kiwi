@@ -51,6 +51,8 @@ class BaseDetector(object):
         self.model = None
         self.cache_location = Path(cache_location)
         self.batch_size = batch_size
+        self.class_names = None
+        self.label_ids = None
         
         if device != None:
             self.device = torch.device(device)
@@ -71,6 +73,7 @@ class BaseDetector(object):
             print(f"Loading model from: {self.model_save_path}")
             self.model = self.get_model(state['num_classes'])
             self.model.load_state_dict(state['state_dict'])
+            self.class_names = state['class_names']
         else:
             print(f"No model found at: {self.model_save_path}")
 
@@ -119,6 +122,8 @@ class BaseDetector(object):
                 num_workers=4,
                 collate_fn=self.collate_fn)
 
+        self.class_names = dataset_train.label_names
+        self.label_ids = dataset_train.label_ids
 
         if self.model == None:
             self.model = self.get_model(num_classes = len(dataset_train.label_names)+1)
@@ -178,20 +183,43 @@ class BaseDetector(object):
         state = {
             'num_classes': len(dataset_train.label_names)+1,
             'state_dict': self.model.state_dict(),
+            'class_names': self.class_names
         }
         torch.save(state, self.model_save_path)
 
         return self.model_save_path
 
     
-    def predict(self, tasks, remove_preds: bool = True, check_labels: bool = True):
+    def predict(self, tasks, remove_preds: bool = True):
 
-        dataset = ProjectKiwiDataSet(self.conn, tasks, self.project_id, self.imagery_id, self.max_zoom, self.cache_location, self.tile_padding, inference=True, make_masks=False)
-        data_loader_inference = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=4, collate_fn=self.collate_fn)
-
+        
         if remove_preds:
             print("Removing all predictions from project.")
             self.conn.removeAllPredictions(self.project_id)
+
+        if self.label_ids is None:
+            self.label_ids = []
+
+            # get/make label ids for labels the model was trained on.
+            labels = self.conn.getLabels(self.project_id)
+            for class_name in self.class_names:
+                label_id = None
+                for label in labels:
+                    if label.name == class_name:
+                        label_id = label.id
+                        break
+                if label_id is None:
+                    print(f"Creating label for: {class_name}")
+                    label = self.conn.addLabel(
+                            project_id = self.project_id,
+                            name = class_name)
+                    self.label_ids.append(label.id) 
+                else:
+                    self.label_ids.append(label.id)
+
+
+        dataset = ProjectKiwiDataSet(self.conn, tasks, self.project_id, self.imagery_id, self.max_zoom, self.cache_location, self.tile_padding, inference=True, make_masks=False)
+        data_loader_inference = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=4, collate_fn=self.collate_fn)
 
         self.model.to(self.device)
         self.model.eval()
@@ -234,7 +262,7 @@ class BaseDetector(object):
 
                         prediction = projectkiwi.models.Annotation(
                             shape="Polygon",
-                            label_id=dataset.label_ids[class_id-1],
+                            label_id=self.label_ids[class_id-1],
                             imagery_id=self.imagery_id,
                             coordinates=poly_latlng,
                             confidence = score)
@@ -249,7 +277,7 @@ class BaseDetector(object):
                         # get the prediction ready
                         prediction = projectkiwi.models.Annotation(
                             shape="Polygon",
-                            label_id=dataset.label_ids[class_id-1],
+                            label_id=self.label_ids[class_id-1],
                             imagery_id=self.imagery_id,
                             coordinates=latLngPoly,
                             confidence = score)

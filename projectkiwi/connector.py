@@ -462,6 +462,13 @@ class Connector():
 
         if color is None:
             rgb = list(np.random.choice(range(256), size=3))
+            min_rgb = np.array(rgb).min()
+            max_rgb = np.array(rgb).max()
+            for i,c in enumerate(rgb):
+                if c == min_rgb:
+                    rgb[i] = 0
+                if c == max_rgb:
+                    rgb[i] = 256
             color = f"rgb({rgb[0]}, {rgb[1]}, {rgb[2]})"
 
 
