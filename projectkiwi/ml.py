@@ -41,7 +41,17 @@ class BaseDetector(object):
     def get_model():
         raise NotImplementedError("Please use a child class of this one")
     
-    def __init__(self, conn, project_id, imagery_id, max_zoom, tile_padding, cache_location, batch_size = 4, model_load_path = None, device = None):
+    def __init__(self, 
+            conn, 
+            project_id, 
+            imagery_id, 
+            max_zoom, 
+            tile_padding, 
+            cache_location, 
+            batch_size = 4, 
+            model_load_path = None, 
+            device = None, 
+            transforms = None):
 
         self.conn = conn
         self.project_id = project_id
@@ -53,6 +63,7 @@ class BaseDetector(object):
         self.batch_size = batch_size
         self.class_names = None
         self.label_ids = None
+        self.transforms = transforms
         
         if device != None:
             self.device = torch.device(device)
@@ -97,7 +108,8 @@ class BaseDetector(object):
                 self.imagery_id,
                 self.max_zoom,
                 self.cache_location,
-                make_masks=self.masks_required)
+                make_masks=self.masks_required,
+                transforms = self.transforms)
 
         data_loader_train = torch.utils.data.DataLoader(
                 dataset_train,

@@ -12,7 +12,6 @@ import numpy as np
 import torch
 from PIL import Image
 import torch
-from torchvision import transforms as T
 from PIL import Image
 from typing import List
 
@@ -63,7 +62,8 @@ class ProjectKiwiDataSet(object):
             cache_location=Path("./cache"),
             padding = 0,
             inference = False,
-            make_masks = True):
+            make_masks = True,
+            transforms = None):
         self.conn = conn
         self.tasks = tasks
         self.imagery_id = imagery_id
@@ -74,13 +74,16 @@ class ProjectKiwiDataSet(object):
         self.inference = inference
         self.getAnnotations(project_id)
         self.make_masks = make_masks
+        self.transforms = transforms
         
 
 
     def __getitem__(self, idx):
         task = self.tasks[idx]
         tile = self.getTaskTile(task)
-
+        
+        img = self.imgToTensor(tile)
+        
         if self.inference == True:
             target = None
         else:
@@ -129,7 +132,10 @@ class ProjectKiwiDataSet(object):
             if self.make_masks:
                 target['masks'] = torch.as_tensor(masks, dtype=torch.uint8)
 
-        return self.imgToTensor(tile), target, task
+            if self.transforms is not None:
+                img, target = self.transforms(img, target)
+
+        return img, target, task
 
     def __len__(self):
         return len(self.tasks)
