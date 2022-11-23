@@ -382,7 +382,7 @@ def splitZXY(zxy: str):
     return z, x, y
 
 
-def urlFromZxy(z: int, x: int, y: int, imagery_id: str, baseUrl: str) -> str:
+def urlFromZxy(z: int, x: int, y: int, imagery_id: str, baseUrl: str, serverless: bool = True) -> str:
     """Generate a url given a zxy and an imagery id
 
     Args:
@@ -391,11 +391,15 @@ def urlFromZxy(z: int, x: int, y: int, imagery_id: str, baseUrl: str) -> str:
         y (int): y tile
         imagery_id (str): id of the imagery
         baseUrl (str): base url e.g. https://project-kiwi.org/
+        serverless (bool): whether to use tiles from lambda or direct from the api. Defaults to True.
 
     Returns:
         str: url to download the tile, however api key is still required as a param
-    """    
-    return f"{baseUrl}/api/get_tile/{imagery_id}/{z}/{x}/{y}"
+    """
+    if serverless:
+        return f"https://api.project-kiwi.org/get_tile/{imagery_id}/{z}/{x}/{y}"
+    else:
+        return f"{baseUrl}/api/get_tile/{imagery_id}/{z}/{x}/{y}"
 
 
 def maskFromPolygon(polygon: List[List], width: int, height: int) -> np.ndarray:
