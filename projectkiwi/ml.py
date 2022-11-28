@@ -38,9 +38,17 @@ class BaseDetector(object):
     def collate_fn(batch):
         return tuple(zip(*batch))
 
-    def get_model():
+    def get_model(self, num_classes, weights: str = "DEFAULT"):
         raise NotImplementedError("Please use a child class of this one")
     
+    def load_model_from_path(self, path: Path):
+        state = torch.load(path)
+        print(f"Loading model from file: {path}")
+        self.model = self.get_model(state['num_classes'], weights=None)
+        self.model.load_state_dict(state['state_dict'])
+        self.class_names = state['class_names']
+
+
     def __init__(self, 
             conn, 
             project_id, 
@@ -64,34 +72,25 @@ class BaseDetector(object):
         self.class_names = None
         self.label_ids = None
         self.transforms = transforms
+        self.model_load_path = model_load_path
         
         if device != None:
             self.device = torch.device(device)
-        
-        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        print(f"Using device: {self.device}")
-
-        # Number of epochs to wait before terminating training without val improvement
-        self.patience = 5
-
-        if model_load_path == None:
-            self.model_save_path = Path(self.cache_location / f"{self.project_id}_{self.model_name}.kiwi")
+            print(f"Using device: {self.device}")
         else:
-            self.model_save_path = model_load_path
-        
-        if Path(self.model_save_path).exists():
-            state = torch.load(self.model_save_path)
-            print(f"Loading model from: {self.model_save_path}")
-            self.model = self.get_model(state['num_classes'])
-            self.model.load_state_dict(state['state_dict'])
-            self.class_names = state['class_names']
-        else:
-            print(f"No model found at: {self.model_save_path}")
+            self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+            print(f"Using device: {self.device}")
+
+        self.model_save_path = Path(self.cache_location / f"{self.project_id}_{self.model_name}.kiwi")
+        if self.model_load_path != None:
+            if Path(self.model_load_path).exists():
+                self.load_model_from_path(self.model_load_path)
+            else:
+                raise ValueError(f"No model found in location: {self.model_load_path}")
 
 
 
-
-    def train(self, tasks, max_epochs: int = 100, resume: bool = True) -> Path:
+    def train(self, tasks, max_epochs: int = 100, resume=True, patience: int = 5) -> Path:
         print(f"Training for up to {max_epochs} epochs.")
         shuffle(tasks)
 
@@ -137,15 +136,17 @@ class BaseDetector(object):
         self.class_names = dataset_train.label_names
         self.label_ids = dataset_train.label_ids
 
-        if self.model == None:
-            self.model = self.get_model(num_classes = len(dataset_train.label_names)+1)
-            if resume:
-                if Path(self.model_save_path).exists():
-                    state = torch.load(self.model_save_path)
-                    print(f"Loading model from: {self.model_save_path}")
-                    self.model.load_state_dict(state['state_dict'])
-                else:
-                    print(f"No model found at: {self.model_save_path}")
+        if self.model is None and resume is True:
+            if not self.model_load_path is None:
+                if Path(self.model_load_path).exists():
+                    self.load_model_from_path(self.model_load_path)
+            elif Path(self.model_save_path).exists():
+                self.load_model_from_path(self.model_save_path)
+            else:
+                raise ValueError(f"No model found in locations: {[self.model_load_path, self.model_save_path]}")
+        elif resume is False:
+            print("Initialising model with generic pre-trained weights.")
+            self.model = self.get_model(num_classes = len(self.class_names)+1)
         self.model.to(self.device)
 
         # construct an optimizer
@@ -184,8 +185,8 @@ class BaseDetector(object):
                 val_loss = np.mean(val_losses)
                 
                 val_history.append(val_loss)
-                if len(val_history) >= self.patience:
-                    if np.min(val_history[-5:]) > np.min(val_history):
+                if len(val_history) >= patience:
+                    if np.min(val_history[-patience:]) > np.min(val_history):
                         print("stagnation detected, ending training!")
                         break
 
@@ -225,7 +226,7 @@ class BaseDetector(object):
                     label = self.conn.addLabel(
                             project_id = self.project_id,
                             name = class_name)
-                    self.label_ids.append(label.id) 
+                    self.label_ids.append(label.id)
                 else:
                     self.label_ids.append(label.id)
 
@@ -256,7 +257,6 @@ class BaseDetector(object):
                 
                 if self.masks_required:
                     for box, score, class_id, mask in zip(boxes, scores, class_ids, masks):
-
                         contours = measure.find_contours(mask[0,:,:], 0.5)
                         if len(contours) == 0:
                             continue
@@ -303,9 +303,9 @@ class InstanceSegmentationModel(BaseDetector):
     masks_required = True
     model_name = "instance_seg"
 
-    def get_model(self, num_classes):
+    def get_model(self, num_classes, weights: str = "DEFAULT"):
         # load an instance segmentation model pre-trained on COCO
-        model = torchvision.models.detection.maskrcnn_resnet50_fpn(weights="DEFAULT", trainable_backbone_layers=5)
+        model = torchvision.models.detection.maskrcnn_resnet50_fpn(weights=weights)
 
         # get number of input features for the classifier
         in_features = model.roi_heads.box_predictor.cls_score.in_features
@@ -326,9 +326,9 @@ class ObjectDetectionModel(BaseDetector):
     masks_required = False
     model_name = "obj_detector"
 
-    def get_model(self, num_classes):
+    def get_model(self, num_classes, weights: str = "DEFAULT"):
         # load an instance segmentation model pre-trained pre-trained on COCO
-        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights="DEFAULT")
+        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights=weights)
 
         # get number of input features for the classifier
         in_features = model.roi_heads.box_predictor.cls_score.in_features
