@@ -143,7 +143,8 @@ class BaseDetector(object):
             elif Path(self.model_save_path).exists():
                 self.load_model_from_path(self.model_save_path)
             else:
-                raise ValueError(f"No model found in locations: {[self.model_load_path, self.model_save_path]}")
+                print("Initialising model with generic pre-trained weights.")
+                self.model = self.get_model(num_classes = len(self.class_names)+1)
         elif resume is False:
             print("Initialising model with generic pre-trained weights.")
             self.model = self.get_model(num_classes = len(self.class_names)+1)
