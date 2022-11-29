@@ -6,7 +6,7 @@ from PIL import Image
 import io
 from typing import List
 from projectkiwi.tools import getOverlap, num2deg, splitZXY, urlFromZxy
-from projectkiwi.models import Annotation, Project, ImageryLayer, TilePath, Task, Label
+from projectkiwi.models import Annotation, Project, ImageryLayer, Tile, Task, Label
 import threading
 import queue
 
@@ -93,10 +93,10 @@ class Connector():
 
 
 
-    def getTileList(self, 
-            imagery_id: str, 
+    def getTileList(self,
+            imagery_id: str,
             project_id: str,
-            zoom: int) -> List[TilePath]:
+            zoom: int) -> List[Tile]:
         """Get a list of tiles for a given imagery id
 
         Args:
@@ -104,7 +104,7 @@ class Connector():
             zoom (int): Zoom level
 
         Returns:
-            List[TilePath]: A list of tiles with zxy and url
+            List[Tile]: A list of tiles with zxy and url
         """
         route = "api/get_tile_list"
         params = {
@@ -118,7 +118,12 @@ class Connector():
         tileList = r.json()
         tiles = []
         for tile in tileList:
-            tiles.append(TilePath(**tile))
+            tiles.append(
+                Tile.from_zxy(
+                    zxy = tile['zxy'], 
+                    imagery_id = imagery_id,
+                    url = tile['url'])
+            )
         assert len(tiles) == len(tileList), "Failed to parse tiles"
         return tiles
 

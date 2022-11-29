@@ -73,9 +73,33 @@ class ImageryLayer(BaseModel):
     max_zoom: Optional[int]
     status: Optional[str]
 
-class TilePath(BaseModel):
+class Tile(BaseModel):
     zxy: str
+    imagery_id: str
     url: str
+    z: int
+    x: int
+    y: int
+
+
+    @classmethod
+    def from_zxy(cls, 
+            zxy: str, 
+            imagery_id: str, 
+            url: str):
+        z = int(zxy.split("/")[0])
+        x = int(zxy.split("/")[1])
+        y = int(zxy.split("/")[2])
+
+        return cls(
+            zxy=zxy,
+            imagery_id=imagery_id,
+            url=url,
+            z=z,
+            x=x,
+            y=y
+        )
+
 
 
 class Task(BaseModel):
