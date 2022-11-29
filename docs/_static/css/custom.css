@@ -1,0 +1,22 @@
+
+.wy-side-nav-search, .wy-nav-top {
+    background: #e7f7c7
+}
+
+
+a {
+    color: #7BA53F;
+}
+
+
+a:hover {
+    color: #C9E29B;
+}
+
+.wy-nav-top a {
+    color: #404040;
+}
+
+.wy-nav-top{
+    color: #404040;
+}
