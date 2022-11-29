@@ -232,9 +232,10 @@ class Connector():
     
     def getAnnotations(self, project_id: str) -> List[Annotation]:
         """Get all annotations in a project
+
         Args:
             project_id (str): id for the project to get the predictions for
-
+        
         Returns:
             List[Annotation]: annotations
         """
@@ -263,8 +264,10 @@ class Connector():
 
     def getPredictions(self, project_id: str) -> List[Annotation]:
         """Get all predictions in a project
+
         Args:
             project_id (str): id for the project to get the predictions for
+
         Returns:
             List[Annotation]: predictions
         """
@@ -423,6 +426,7 @@ class Connector():
 
     def getLabels(self, project_id: str) -> List[Label]:
         """Get all labels in a project
+
         Args:
             project_id (str): id for the project to get the labels for
 
