@@ -1,13 +1,14 @@
 # Getting Started
 
-Below are a few examples of some basic usage to get started with the API.
-### Installation
+Below are a few examples of some basic usage to get started with the API. For more details see the [API Reference](projectkiwi).
+
+## Installation
 ```Bash
 pip install projectkiwi
 ```
 ---
 
-### Getting Started
+## Getting Started
 Register and get your api key from [https://project-kiwi.org/](https://project-kiwi.org/)
 ```python
 from projectkiwi.connector import Connector
@@ -20,7 +21,7 @@ print(imagery)
 
 ---
 
-### Add some data
+## Add some data
 
 Let's download some satellite imagery of chicago!
 ```Bash
@@ -41,7 +42,7 @@ while True:
 
 ---
 
-### List Tiles
+## List Tiles
 ```Python
 tiles = conn.getTileList("2bdf45d8b8da", 13)
 print("tiles: {}".format(len(tiles)))
@@ -50,7 +51,7 @@ print("top5: ", tiles[:5])
 
 ---
 
-### Tiles as numpy arrays
+## Tiles as numpy arrays
 ```python
 import matplotlib.pyplot as plt
 
