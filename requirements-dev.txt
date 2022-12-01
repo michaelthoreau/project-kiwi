@@ -6,4 +6,5 @@ shapely
 torch
 torchvision
 scikit-image
+json
 myst-parser

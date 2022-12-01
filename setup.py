@@ -25,7 +25,8 @@ setup(
     'shapely',
     'torch',
     'torchvision',
-    'scikit-image'
+    'scikit-image',
+    'json'
   ],
   classifiers=[
         "Programming Language :: Python :: 3",
