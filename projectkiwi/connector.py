@@ -235,9 +235,19 @@ class Connector():
 
         Args:
             project_id (str): id for the project to get the predictions for
-        
+
         Returns:
             List[Annotation]: annotations
+
+        Example:
+            All the annotations for a project can be retrieved using this function. Replace the project id listed below with your own.
+
+            >>> annotations = conn.getAnnotations(project_id = "51f696a5361f")
+            >>> print(annotations[0])
+            Annotation(shape='Polygon', label_id=374, coordinates=[[-87.612448, 41.867452], [-87.605238, 41.867452], [-87.605238, 41.852301], [-87.612448, 41.852301], [-87.612448, 41.867452]], url=None, imagery_id=None, confidence=None, id=3720, label_name='airport', label_color='rgb(10, 184, 227)')
+            >>> print(annotations[0].geoJSON()) # as geoJSON
+            {"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[-87.612448, 41.867452], [-87.605238, 41.867452], [-87.605238, 41.852301], [-87.612448, 41.852301], [-87.612448, 41.867452]]}, "properties": {"label_id": 374, "name": "airport"}}
+
         """
 
         route = "api/get_annotations"
@@ -270,6 +280,14 @@ class Connector():
 
         Returns:
             List[Annotation]: predictions
+
+        Example:
+            All predictions in a project can be retrieved as follows. Replace the project id shown below with your own.
+
+            >>> predictions = conn.getPredictions(project_id="51f969a5361f")
+            >>> print(predictions)
+            [Annotation(shape='Polygon', label_id=374, coordinates=[[-87.612448, 41.867452], [-87.605238, 41.867452], [-87.605238, 41.852301], [-87.612448, 41.852301], [-87.612448, 41.867452]], url=None, imagery_id=None, confidence=0.69, id=259184, label_name='airport', label_color='rgb(10, 184, 227)')]
+
         """
         
         annotations = self.getAnnotations(project_id=project_id)
@@ -381,6 +399,25 @@ class Connector():
 
         Returns:
             int: annotation id if successful
+
+        Example:
+            Predictions are annotation objects with a confidence value between 0 and 1. The following example creates
+            a prediction for an already existing object class.
+
+                >>> from projectkiwi.models import Annotation
+                >>> prediction = Annotation(shape='Polygon', 
+                ...                        label_id=374, 
+                ...                        coordinates=[
+                ...                            [-87.612448, 41.867452], 
+                ...                            [-87.605238, 41.867452], 
+                ...                            [-87.605238, 41.852301], 
+                ...                            [-87.612448, 41.852301], 
+                ...                            [-87.612448, 41.867452]],
+                ...                        confidence=0.69
+                ...                        )
+                >>> id = conn.addPrediction(prediction, project="51f969a5361f")
+                >>> print(f"prediction id: {id}")
+                prediction id: 259185
         """       
 
         assert not annotation.confidence is None, "No confidence for prediction"

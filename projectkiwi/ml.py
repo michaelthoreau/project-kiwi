@@ -1,4 +1,3 @@
-# !pip install projectkiwi
 import sys
 sys.path.append('../../projectkiwi/')
 
@@ -30,6 +29,23 @@ from skimage.measure import approximate_polygon
 
 
 class BaseDetector(object):
+    """Base detector model. This class can be instantiated for training/running detectors on data directly from project-kiwi.org.
+
+    Args:
+        conn (Connector): A connection object from projectkiwi.connector.
+        project_id (str): Id of the project to work with.
+        imagery_id (str): Id of the imagery to get tiles from.
+        max_zoom (int): Maximum zoom level to request data for, higher zoom will result in higher resolution inputs.
+        tile_padding (int): Number of additional pixels to use request on each side of the tile.
+        cache_location (str): Downloaded tiles and model checkpoints will be stored here.
+        batch_size (int, optional): Batch size. Defaults to 4.
+        model_load_path (str, optional): Path to a trained model to load. Defaults to None.
+        device (str, optional): Device descriptor to use for training/inference e.g. 'cuda'. Defaults to None.
+        transforms (_type_, optional): Transforms to use, from projectkiwi.transforms. Defaults to None.
+
+    Raises:
+        ValueError: If a model is specified to load but it cant be found/loaded, a valueError will be raised.
+    """       
 
     def threadAddPrediction(self, prediction):
         self.conn.addPrediction(prediction, self.project_id)
@@ -59,7 +75,7 @@ class BaseDetector(object):
             batch_size = 4, 
             model_load_path = None, 
             device = None, 
-            transforms = None):
+            transforms = None):     
 
         self.conn = conn
         self.project_id = project_id
@@ -91,6 +107,32 @@ class BaseDetector(object):
 
 
     def train(self, tasks, max_epochs: int = 100, resume=True, patience: int = 5) -> Path:
+        """Train the object detection model on data and annotations from project-kiwi.org.
+
+        Args:
+            tasks (List[Task]): List of tasks to use for training.
+            max_epochs (int, optional): Maximum number of epochs to train for.. Defaults to 100.
+            resume (bool, optional): Resume training. Defaults to True.
+            patience (int, optional): Number of epochs to train for without any improvement. Defaults to 5.
+
+        Returns:
+            Path: Path to the trained model checkpoint.
+
+        Example:
+            
+            >>> conn = Connector(API_KEY)
+            >>> detector = ObjectDetectionModel(conn,
+            ...    project_id = PROJECT_ID, 
+            ...    imagery_id = IMAGERY_ID, 
+            ...    max_zoom = MAX_ZOOM, 
+            ...    tile_padding = 50, 
+            ...    cache_location = "./cache",
+            ...    batch_size=4)
+            >>> tasks = conn.getTasks(QUEUE_ID)
+            >>> complete_tasks = [task for task in tasks if task.complete == True]
+            >>> detector.train(complete_tasks, max_epochs = 20)
+        """        
+
         print(f"Training for up to {max_epochs} epochs.")
         shuffle(tasks)
 
@@ -205,7 +247,26 @@ class BaseDetector(object):
 
     
     def predict(self, tasks, remove_preds: bool = True):
+        """Run prediction on a set of tasks on project-kiwi.org, and upload any predictions.
 
+        Args:
+            tasks (_type_): Tasks to run the model on. e.g. tasks in a queue.
+            remove_preds (bool, optional): Remove all predictions in a project. Defaults to True.
+
+        Example:
+            >>> conn = Connector(API_KEY)
+            >>> detector = ObjectDetectionModel(conn,
+            ...    project_id = PROJECT_ID, 
+            ...    imagery_id = IMAGERY_ID, 
+            ...    max_zoom = MAX_ZOOM, 
+            ...    tile_padding = 50, 
+            ...    cache_location = "./cache",
+            ...    model_load_path="model.kiwi",
+            ...    batch_size=4)
+            >>> tasks = conn.getTasks(QUEUE_ID)
+            >>> incomplete_tasks = [task for task in tasks if task.complete == False]
+            >>> detector.predict(incomplete_tasks)
+        """        
         
         if remove_preds:
             print("Removing all predictions from project.")
@@ -301,6 +362,24 @@ class BaseDetector(object):
 
 
 class InstanceSegmentationModel(BaseDetector):
+    """Mask R-CNN model. This class can be instantiated for training/running instance segmentation models on data directly from project-kiwi.org.
+
+    Args:
+        conn (Connector): A connection object from projectkiwi.connector.
+        project_id (str): Id of the project to work with.
+        imagery_id (str): Id of the imagery to get tiles from.
+        max_zoom (int): Maximum zoom level to request data for, higher zoom will result in higher resolution inputs.
+        tile_padding (int): Number of additional pixels to use request on each side of the tile.
+        cache_location (str): Downloaded tiles and model checkpoints will be stored here.
+        batch_size (int, optional): Batch size. Defaults to 4.
+        model_load_path (str, optional): Path to a trained model to load. Defaults to None.
+        device (str, optional): Device descriptor to use for training/inference e.g. 'cuda'. Defaults to None.
+        transforms (_type_, optional): Transforms to use, from projectkiwi.transforms. Defaults to None.
+
+    Raises:
+        ValueError: If a model is specified to load but it cant be found/loaded, a valueError will be raised.
+    """
+
     masks_required = True
     model_name = "instance_seg"
 
@@ -324,6 +403,24 @@ class InstanceSegmentationModel(BaseDetector):
         return model
 
 class ObjectDetectionModel(BaseDetector):
+    """Faster R-CNN model. This class can be instantiated for training/running object detection models on data directly from project-kiwi.org.
+
+    Args:
+        conn (Connector): A connection object from projectkiwi.connector.
+        project_id (str): Id of the project to work with.
+        imagery_id (str): Id of the imagery to get tiles from.
+        max_zoom (int): Maximum zoom level to request data for, higher zoom will result in higher resolution inputs.
+        tile_padding (int): Number of additional pixels to use request on each side of the tile.
+        cache_location (str): Downloaded tiles and model checkpoints will be stored here.
+        batch_size (int, optional): Batch size. Defaults to 4.
+        model_load_path (str, optional): Path to a trained model to load. Defaults to None.
+        device (str, optional): Device descriptor to use for training/inference e.g. 'cuda'. Defaults to None.
+        transforms (_type_, optional): Transforms to use, from projectkiwi.transforms. Defaults to None.
+
+    Raises:
+        ValueError: If a model is specified to load but it cant be found/loaded, a valueError will be raised.
+    """
+
     masks_required = False
     model_name = "obj_detector"
 

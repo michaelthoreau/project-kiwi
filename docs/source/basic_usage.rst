@@ -73,3 +73,25 @@ Reading Annotations
 
   # read all annotations in a project
   annotations = conn.getAnnotations(project.id)
+
+  # get annotations as geojson
+  print(annotations[0].geoJSON())
+
+  # result
+  {
+    "type": "Feature",
+    "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+            [-87.612448, 41.867452],
+            [-87.605238, 41.867452],
+            [-87.605238, 41.852301],
+            [-87.612448, 41.852301],
+            [-87.612448, 41.867452]
+        ]
+    },
+    "properties": {
+        "label_id": 374,
+        "name": "airport"
+    }
+  }

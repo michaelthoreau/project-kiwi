@@ -1,7 +1,7 @@
 from turtle import st
 from pydantic import BaseModel
 from typing import List, Optional
-
+import json
 
 class Annotation(BaseModel):  
     shape: str
@@ -44,6 +44,39 @@ class Annotation(BaseModel):
             imagery_id = data['imagery_id'],
             confidence=confidence
         )
+    
+    def geoJSON(self) -> str:
+        """Convert the annotation to a geoJSON string
+
+        Returns:
+            str: geoJSON representation
+
+        Example:
+
+            >>>
+        """
+
+        geojson = {
+            "type": "Feature",
+            "geometry": {
+                "type": self.shape,
+                "coordinates": self.coordinates
+            },
+            "properties": {
+                "label_id": self.label_id
+            }
+        }
+
+        if self.confidence is not None:
+            geojson['properties']['confidence'] = self.confidence
+        
+        if self.label_name is not None:
+            geojson['properties']['name'] = self.label_name
+
+        return json.dumps(geojson)
+
+
+
 
 
 
