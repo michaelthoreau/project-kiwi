@@ -6,4 +6,3 @@ shapely
 torch
 torchvision
 scikit-image
-json
