@@ -29,7 +29,7 @@ from skimage.measure import approximate_polygon
 
 
 class BaseDetector(object):
-    """Base detector model. This class can be instantiated for training/running detectors on data directly from project-kiwi.org.
+    """Base detector model. This class can be instantiated for training/running detectors on data directly from projectkiwi.io
 
     Args:
         conn (Connector): A connection object from projectkiwi.connector.
@@ -107,7 +107,7 @@ class BaseDetector(object):
 
 
     def train(self, tasks, max_epochs: int = 100, resume=True, patience: int = 5) -> Path:
-        """Train the object detection model on data and annotations from project-kiwi.org.
+        """Train the object detection model on data and annotations from projectkiwi.io.
 
         Args:
             tasks (List[Task]): List of tasks to use for training.
@@ -403,7 +403,7 @@ class InstanceSegmentationModel(BaseDetector):
         return model
 
 class ObjectDetectionModel(BaseDetector):
-    """Faster R-CNN model. This class can be instantiated for training/running object detection models on data directly from project-kiwi.org.
+    """Faster R-CNN model. This class can be instantiated for training/running object detection models on data directly from projectkiwi.io.
 
     Args:
         conn (Connector): A connection object from projectkiwi.connector.

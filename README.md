@@ -1,6 +1,6 @@
 # projectkiwi
 
-Tools to interact with project-kiwi.org
+Tools to interact with projectkiwi.io
 
 
 ### Installation

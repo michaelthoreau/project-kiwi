@@ -14,12 +14,12 @@ import queue
 
 
 class Connector():
-    def __init__(self, key, url="https://project-kiwi.org/"):
+    def __init__(self, key, url="https://projectkiwi.io/"):
         """constructor
 
         Args:
             key (str): API key.
-            url (str, optional): url for api, in case of multiple instances. Defaults to "https://project-kiwi.org/api/".
+            url (str, optional): url for api, in case of multiple instances. Defaults to "https://projectkiwi.io/".
         """
 
         self.key = key
@@ -172,7 +172,7 @@ class Connector():
         
 
     def addImagery(self, filename: str, name: str, project_id: str) -> str:
-        """ Add imagery to project-kiwi.org
+        """ Add imagery to projectkiwi.io
 
         Args:
             filename (str): Path to the file to be uploaded

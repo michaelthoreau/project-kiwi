@@ -3,7 +3,7 @@
 Connecting To the API
 ---------------------
 
-To work with project kiwi via the python API, you will need to register and get your API key from `here <https://project-kiwi.org/account/#developer>`__.
+To work with project kiwi via the python API, you will need to register and get your API key from `here <https://projectkiwi.io/account/#developer>`__.
 
 .. code:: python
 
@@ -20,7 +20,7 @@ To work with project kiwi via the python API, you will need to register and get 
 Uploading Data
 --------------
 
-Our platform is designed to work with GeoTIFF files, you can find some examples `here <https://project-kiwi.org/developer/uploading_imagery/>`__. Either upload your data to a project through the web interface or via the API:
+Our platform is designed to work with GeoTIFF files, you can find some examples `here <https://projectkiwi.io/developer/uploading_imagery/>`__. Either upload your data to a project through the web interface or via the API:
 
 .. code:: python
 
@@ -36,7 +36,7 @@ Our platform is designed to work with GeoTIFF files, you can find some examples 
 Reading Tiles as Numpy Arrays
 -----------------------------
 
-.. image:: https://project-kiwi.org/imgs/figs/getTile.png
+.. image:: https://projectkiwi.io/imgs/figs/getTile.png
   :width: 300pt
   :align: center
 

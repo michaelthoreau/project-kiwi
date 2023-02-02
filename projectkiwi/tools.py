@@ -390,14 +390,14 @@ def urlFromZxy(z: int, x: int, y: int, imagery_id: str, baseUrl: str, serverless
         x (int): x tile
         y (int): y tile
         imagery_id (str): id of the imagery
-        baseUrl (str): base url e.g. https://project-kiwi.org/
+        baseUrl (str): base url e.g. https://projectkiwi.io/
         serverless (bool): whether to use tiles from lambda or direct from the api. Defaults to True.
 
     Returns:
         str: url to download the tile, however api key is still required as a param
     """
     if serverless:
-        return f"https://api.project-kiwi.org/get_tile/{imagery_id}/{z}/{x}/{y}"
+        return f"https://api.projectkiwi.io/get_tile/{imagery_id}/{z}/{x}/{y}"
     else:
         return f"{baseUrl}/api/get_tile/{imagery_id}/{z}/{x}/{y}"
 

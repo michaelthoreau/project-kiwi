@@ -58,7 +58,7 @@ Contact
 -------
 
 To get in touch with the development team, please email:
-**michael@project-kiwi.org**.
+**michael@projectkiwi.io**.
 
 .. _GitHub: https://github.com/michaelthoreau/projectkiwi
 
